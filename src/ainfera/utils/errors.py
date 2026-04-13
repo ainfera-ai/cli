@@ -11,9 +11,9 @@ def handle_api_error(response: httpx.Response) -> None:
     status = response.status_code
 
     messages = {
-        401: "API key invalid. Run `ainfera login` to re-authenticate.",
+        401: "Authentication failed. Run 'ainfera auth login' to set your API key.",
         403: "Insufficient permissions for this action.",
-        404: "Agent not found. Run `ainfera status --all` to list your agents.",
+        404: "Agent not found.",
         429: f"Rate limit exceeded. Try again in {response.headers.get('retry-after', '30')} seconds.",
     }
 
@@ -22,7 +22,7 @@ def handle_api_error(response: httpx.Response) -> None:
 
     if status >= 500:
         raise click.ClickException(
-            "Ainfera API error. Try again or check https://status.ainfera.ai"
+            "API error. Check https://api.ainfera.ai/health"
         )
 
     if status >= 400:

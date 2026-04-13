@@ -1,4 +1,4 @@
-"""ainfera init — detect framework and generate ainfera.yaml."""
+"""ainfera init — scaffold ainfera.yaml in the current directory."""
 
 from __future__ import annotations
 
@@ -10,136 +10,162 @@ import click
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from ainfera.config.yaml_parser import (
-    AinferaConfig,
-    InferenceConfig,
-    generate_yaml,
-)
-from ainfera.ui.console import (
-    console,
-    print_error,
-    print_header,
-    print_success,
-    print_warning,
-)
-from ainfera.utils.detect import detect_entrypoint, detect_framework
+from ainfera.ui.console import console, print_error, print_header, print_success
 
+_FRAMEWORKS = [
+    ("langchain", "LangChain"),
+    ("crewai", "CrewAI"),
+    ("openai_sdk", "OpenAI SDK"),
+    ("autogen", "AutoGen"),
+    ("adk", "ADK"),
+    ("custom", "Custom"),
+]
 
-# Framework-specific inference defaults
-_INFERENCE_DEFAULTS = {
-    "langchain": InferenceConfig(provider="openai", model="gpt-4o-mini"),
-    "crewai": InferenceConfig(provider="openai", model="gpt-4o-mini"),
-    "autogen": InferenceConfig(provider="openai", model="gpt-4o-mini"),
-    "openai_sdk": InferenceConfig(provider="openai", model="gpt-4o-mini"),
-    "adk": InferenceConfig(provider="google", model="gemini-2.0-flash"),
-    "custom": InferenceConfig(provider="openai", model="gpt-4o-mini"),
-}
+_TIERS = ["basic", "standard", "gpu"]
 
 
 @click.command("init")
-@click.option("--name", default=None, help="Agent name (default: directory name)")
+@click.option("--name", default=None, help="Agent name")
 @click.option(
     "--framework",
-    type=click.Choice(
-        ["langchain", "crewai", "autogen", "adk", "openai_sdk", "custom"]
-    ),
+    type=click.Choice([fw[0] for fw in _FRAMEWORKS], case_sensitive=False),
     default=None,
-    help="Override framework detection",
+    help="Agent framework",
+)
+@click.option("--description", default=None, help="Short description")
+@click.option(
+    "--tier",
+    type=click.Choice(_TIERS, case_sensitive=False),
+    default=None,
+    help="Compute tier",
 )
 @click.option("--force", is_flag=True, help="Overwrite existing ainfera.yaml")
 @click.pass_context
-def init(ctx, name: str | None, framework: str | None, force: bool):
-    """Initialize Ainfera in the current directory."""
+def init(
+    ctx,
+    name: str | None,
+    framework: str | None,
+    description: str | None,
+    tier: str | None,
+    force: bool,
+):
+    """Create an ainfera.yaml config file in the current directory."""
     json_output = ctx.obj.get("json", False)
     config_path = Path("ainfera.yaml")
+
+    if config_path.exists() and not force:
+        if json_output:
+            click.echo(json.dumps({"error": "ainfera.yaml already exists"}))
+            raise SystemExit(1)
+        if not click.confirm(
+            "  ainfera.yaml already exists. Overwrite?", default=False
+        ):
+            console.print("  [ainfera.muted]Aborted.[/]")
+            return
 
     if not json_output:
         print_header()
         console.print("  [ainfera.info]Initializing Ainfera...[/]")
         console.print()
 
-    # Check for existing config
-    if config_path.exists() and not force:
-        if json_output:
-            click.echo(json.dumps({"error": "ainfera.yaml already exists"}))
-            raise SystemExit(1)
-        print_error(
-            "ainfera.yaml already exists.",
-            "Use --force to overwrite.",
-        )
-        raise SystemExit(1)
-
-    # Detect framework
-    if framework:
-        fw_name = framework
-        details = {"framework": framework, "source_file": None, "confidence": "manual"}
-    else:
-        with console.status("  [ainfera.muted]Scanning project files...[/]"):
-            fw_name, details = detect_framework(".")
-
-    if not json_output:
-        version_str = f" v{details['version']}" if details.get("version") else ""
-        source_str = (
-            f" (from {details['source_file']})" if details.get("source_file") else ""
-        )
-        print_success(
-            f"Detected: [bold]{fw_name.replace('_', ' ').title()}[/]{version_str}{source_str}"
-        )
-
-        if details.get("confidence") == "low":
-            print_warning(
-                "Low confidence detection. Use --framework to specify manually."
-            )
-
-    # Detect entry point
-    entrypoint = detect_entrypoint(".")
-    if entrypoint and not json_output:
-        print_success(f"Entry point: [bold]{entrypoint}[/]")
-
-    # Determine agent name
     if name is None:
-        name = os.path.basename(os.getcwd())
-    if not json_output:
-        print_success(f"Agent name: [bold]{name}[/]")
+        default_name = os.path.basename(os.getcwd())
+        name = (
+            default_name
+            if json_output
+            else click.prompt("  Agent name", default=default_name)
+        )
 
-    # Build config
-    inference = _INFERENCE_DEFAULTS.get(fw_name, _INFERENCE_DEFAULTS["custom"])
-    config = AinferaConfig(
+    if framework is None:
+        framework = _prompt_framework(json_output)
+
+    if description is None and not json_output:
+        description = click.prompt("  Description", default="", show_default=False)
+
+    if tier is None:
+        tier = (
+            "standard"
+            if json_output
+            else click.prompt(
+                "  Compute tier",
+                default="standard",
+                type=click.Choice(_TIERS, case_sensitive=False),
+            )
+        )
+
+    yaml_content = _render_yaml(
         name=name,
-        framework=fw_name,
-        inference=inference,
+        framework=framework,
+        description=description or "",
+        tier=tier,
     )
-
-    # Generate and write YAML
-    yaml_content = generate_yaml(config)
     config_path.write_text(yaml_content)
 
     if json_output:
         click.echo(
             json.dumps(
                 {
-                    "framework": fw_name,
-                    "config_path": str(config_path),
-                    "config": config.model_dump(exclude_none=True),
+                    "path": str(config_path),
+                    "name": name,
+                    "framework": framework,
+                    "description": description or "",
+                    "tier": tier,
                 }
             )
         )
         return
 
-    # Show the generated config
     console.print()
     syntax = Syntax(yaml_content, "yaml", theme="monokai", line_numbers=False)
-    panel = Panel(
-        syntax,
-        title="[bold]ainfera.yaml[/bold]",
-        border_style="ainfera.muted",
-        padding=(1, 2),
+    console.print(
+        Panel(
+            syntax,
+            title="[bold]ainfera.yaml[/]",
+            border_style="ainfera.muted",
+            padding=(1, 2),
+        )
     )
-    console.print(panel)
-
+    console.print()
+    print_success("Created ainfera.yaml")
     console.print()
     console.print("  [bold]Next steps:[/]")
-    console.print("    1. Review ainfera.yaml and adjust settings")
+    console.print("    1. Edit ainfera.yaml to customize your agent config")
     console.print("    2. Run [bold]ainfera deploy[/] to deploy your agent")
-    console.print("    3. Run [bold]ainfera trust[/] to check your trust score")
+    console.print(
+        "    3. Run [bold]ainfera trust score <agent-id>[/] to check trust scores"
+    )
     console.print()
+
+
+def _prompt_framework(json_output: bool) -> str:
+    if json_output:
+        return "custom"
+    console.print("  [bold]Framework:[/]")
+    for idx, (_, label) in enumerate(_FRAMEWORKS, start=1):
+        console.print(f"    {idx}. {label}")
+    choice = click.prompt(
+        "  Select",
+        type=click.IntRange(1, len(_FRAMEWORKS)),
+        default=1,
+    )
+    return _FRAMEWORKS[choice - 1][0]
+
+
+def _render_yaml(*, name: str, framework: str, description: str, tier: str) -> str:
+    escaped = description.replace('"', '\\"')
+    return (
+        'version: "1"\n'
+        "agent:\n"
+        f"  name: {name}\n"
+        f"  framework: {framework}\n"
+        f'  description: "{escaped}"\n'
+        "  compute:\n"
+        f"    tier: {tier}\n"
+        "    timeout: 30\n"
+        "  trust:\n"
+        "    min_score: 50\n"
+        "    auto_kill_below: 20\n"
+        "  billing:\n"
+        "    model: per-call\n"
+        "    price_per_call: 0.003\n"
+    )

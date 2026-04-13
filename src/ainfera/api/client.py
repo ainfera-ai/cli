@@ -61,26 +61,41 @@ class AinferaClient:
         repo_url: str | None = None,
         branch: str = "main",
         config_yaml: str = "",
+        description: str | None = None,
+        compute_tier: str | None = None,
     ) -> dict:
+        payload: dict = {
+            "name": name,
+            "framework": framework,
+            "repo_url": repo_url,
+            "branch": branch,
+            "config_yaml": config_yaml,
+        }
+        if description is not None:
+            payload["description"] = description
+        if compute_tier is not None:
+            payload["compute_tier"] = compute_tier
+        return self._request("POST", "/v1/agents", json=payload)
+
+    def update_agent(self, agent_id: str, **fields) -> dict:
+        return self._request("PATCH", f"/v1/agents/{agent_id}", json=fields)
+
+    def create_agent_from_config(self, config_yaml: str) -> dict:
         return self._request(
-            "POST",
-            "/v1/agents",
-            json={
-                "name": name,
-                "framework": framework,
-                "repo_url": repo_url,
-                "branch": branch,
-                "config_yaml": config_yaml,
-            },
+            "POST", "/v1/agents/from-config", json={"config_yaml": config_yaml}
         )
+
+    def delete_agent(self, agent_id: str) -> None:
+        self._request("DELETE", f"/v1/agents/{agent_id}")
 
     def get_agent(self, agent_id: str) -> dict:
         return self._request("GET", f"/v1/agents/{agent_id}")
 
-    def list_agents(self, page: int = 1, per_page: int = 20) -> dict:
-        return self._request(
-            "GET", "/v1/agents", params={"page": page, "per_page": per_page}
-        )
+    def list_agents(self, page: int = 1, per_page: int = 20, name: str | None = None) -> dict:
+        params: dict = {"page": page, "per_page": per_page}
+        if name is not None:
+            params["name"] = name
+        return self._request("GET", "/v1/agents", params=params)
 
     def deploy_agent(self, agent_id: str) -> dict:
         return self._request("POST", f"/v1/agents/{agent_id}/deploy")

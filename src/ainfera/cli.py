@@ -5,10 +5,12 @@ from __future__ import annotations
 import click
 
 from ainfera import __version__
+from ainfera.commands.agents import agents
+from ainfera.commands.auth import auth
 from ainfera.commands.deploy import deploy
+from ainfera.commands.health import health
 from ainfera.commands.init import init
 from ainfera.commands.kill import kill
-from ainfera.commands.login import login
 from ainfera.commands.logs import logs
 from ainfera.commands.status import status
 from ainfera.commands.trust import trust
@@ -26,11 +28,13 @@ def main(ctx, json_output: bool, verbose: bool):
     ctx.obj["verbose"] = verbose
 
 
-main.add_command(login)
+main.add_command(auth)
+main.add_command(agents)
+main.add_command(trust)
+main.add_command(health)
 main.add_command(init)
 main.add_command(deploy)
 main.add_command(status)
-main.add_command(trust)
 main.add_command(kill)
 main.add_command(logs)
 
