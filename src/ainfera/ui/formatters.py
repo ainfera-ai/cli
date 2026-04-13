@@ -66,7 +66,6 @@ def format_agent_table(agents: list[dict]) -> Table:
 
 def format_agent_panel(agent: dict) -> Panel:
     """Format a single agent as a Rich panel."""
-    from rich.text import Text
 
     lines = []
     lines.append(f"  Status         {format_agent_status(agent.get('status', 'unknown'))}")
@@ -117,34 +116,29 @@ def render_dimension_bar(value: float, width: int = 18) -> str:
 
 def format_trust_panel(trust_data: dict) -> Panel:
     """Format trust score breakdown as a Rich panel."""
-    score = trust_data.get("score", 0)
+    score = trust_data.get("overall_score", trust_data.get("score", 0))
     grade = trust_data.get("grade", "\u2014")
-    dimensions = trust_data.get("dimensions", {})
+    dimensions = trust_data.get("dimensions") or {
+        "reliability": trust_data.get("reliability_score", 0.0),
+        "security": trust_data.get("security_score", 0.0),
+        "quality": trust_data.get("quality_score", 0.0),
+    }
 
-    lines = []
-    lines.append(f"  Overall    {format_trust_score(score, grade)}")
-    lines.append("")
-
+    lines = [f"  Overall    {format_trust_score(score, grade)}", ""]
     for dim_name, dim_value in dimensions.items():
         label = dim_name.capitalize().ljust(14)
-        bar = render_dimension_bar(dim_value)
+        bar = render_dimension_bar(float(dim_value))
         lines.append(f"  {label} {bar}")
 
+    is_public = trust_data.get("is_public", trust_data.get("public", False))
     lines.append("")
-    lines.append(f"  Assessments   [ainfera.muted]{trust_data.get('assessment_count', 0)}[/]")
-    lines.append(f"  Public        [ainfera.muted]{'yes' if trust_data.get('public', True) else 'no'}[/]")
+    lines.append(f"  Assessments    [ainfera.muted]{trust_data.get('assessment_count', 0)}[/]")
+    lines.append(f"  Public         [ainfera.muted]{'yes' if is_public else 'no'}[/]")
     if trust_data.get("computed_at"):
         lines.append(f"  Last computed  [ainfera.muted]{trust_data['computed_at']}[/]")
-    lines.append("")
-    lines.append(f"  Anomalies     [ainfera.muted]{trust_data.get('anomaly_count', 0)} active[/]")
 
-    ks = trust_data.get("kill_switch_status", "armed")
-    threshold = trust_data.get("quarantine_threshold", 400)
-    lines.append(f"  Kill switch   {format_kill_switch_status(ks)} (threshold: {threshold})")
-
-    content = "\n".join(lines)
     return Panel(
-        content,
+        "\n".join(lines),
         title="[bold]Trust Score[/bold]",
         border_style="ainfera.muted",
         padding=(1, 2),
@@ -158,20 +152,25 @@ def format_trust_history_table(history: list[dict]) -> Table:
     table.add_column("Score", justify="center")
     table.add_column("Grade", justify="center")
     table.add_column("Change", justify="center")
+
+    prev_score: int | None = None
     for entry in history:
-        change_val = entry.get("change", 0)
+        score = entry.get("overall_score", entry.get("score", 0))
+        date = (entry.get("computed_at") or entry.get("date") or "")[:10]
+        if "change" in entry:
+            change_val = entry["change"]
+        elif prev_score is not None:
+            change_val = score - prev_score
+        else:
+            change_val = 0
         if change_val > 0:
             change = f"[ainfera.success]\u2191 +{change_val}[/]"
         elif change_val < 0:
             change = f"[ainfera.error]\u2193 {change_val}[/]"
         else:
             change = "[ainfera.muted]\u2192 0[/]"
-        table.add_row(
-            entry.get("date", ""),
-            str(entry.get("score", 0)),
-            entry.get("grade", "\u2014"),
-            change,
-        )
+        table.add_row(date, str(score), entry.get("grade", "\u2014"), change)
+        prev_score = score
     return table
 
 
@@ -193,9 +192,9 @@ def format_anomalies_table(anomalies: list[dict]) -> Table:
         sev = anomaly.get("severity", "low")
         style = severity_styles.get(sev, "ainfera.muted")
         table.add_row(
-            anomaly.get("type", ""),
+            anomaly.get("anomaly_type", anomaly.get("type", "")),
             f"[{style}]{sev}[/{style}]",
             anomaly.get("description", ""),
-            anomaly.get("detected_at", ""),
+            (anomaly.get("detected_at") or "")[:19],
         )
     return table

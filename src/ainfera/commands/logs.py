@@ -18,7 +18,14 @@ from ainfera.ui.console import console, print_error, print_header
 @click.option("--tail", default=50, help="Number of recent log lines")
 @click.pass_context
 def logs(ctx, agent_id: str | None, follow: bool, tail: int):
-    """View or stream agent execution logs."""
+    """View or stream agent execution logs.
+
+    \b
+    Examples:
+      ainfera logs 8e7b4d6e-...
+      ainfera logs 8e7b4d6e-... --tail 200
+      ainfera logs 8e7b4d6e-... -f                  # stream via WebSocket
+    """
     json_output = ctx.obj.get("json", False)
     api_key = ensure_authenticated()
     client = AinferaClient(api_key=api_key, api_url=get_api_url())
@@ -79,7 +86,7 @@ def _stream_logs(client: AinferaClient, agent_id: str, json_output: bool):
     if not json_output:
         print_header()
         console.print(
-            f"  [ainfera.brand]\u25c6 AINFERA[/] \u2014 streaming logs (Ctrl+C to stop)"
+            "  [ainfera.brand]\u25c6 AINFERA[/] \u2014 streaming logs (Ctrl+C to stop)"
         )
         console.print()
 

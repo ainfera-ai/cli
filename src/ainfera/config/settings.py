@@ -58,8 +58,8 @@ def ensure_authenticated() -> str:
     key = get_api_key()
     if not key:
         raise click.ClickException(
-            "Not authenticated. Run [bold]ainfera login[/bold] to authenticate.\n"
-            "  Or set the AINFERA_API_KEY environment variable."
+            "Not authenticated. Run 'ainfera auth login' to authenticate, "
+            "or set the AINFERA_API_KEY environment variable."
         )
     return key
 

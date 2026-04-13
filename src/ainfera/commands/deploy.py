@@ -34,7 +34,15 @@ from ainfera.ui.console import console, print_error, print_header
 )
 @click.pass_context
 def deploy(ctx, config_path: str, dry_run: bool, from_config: bool):
-    """Deploy your agent from ainfera.yaml."""
+    """Deploy your agent from ainfera.yaml.
+
+    \b
+    Examples:
+      ainfera deploy                                 # reads ./ainfera.yaml
+      ainfera deploy --dry-run                       # show plan, don't call API
+      ainfera deploy --config ./agents/bot.yaml
+      ainfera deploy --from-config                   # send raw YAML to /v1/agents/from-config
+    """
     json_output = ctx.obj.get("json", False)
 
     path = Path(config_path)
@@ -119,7 +127,6 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool):
                         agent_id,
                         framework=framework,
                         description=description,
-                        compute_tier=tier,
                         config_yaml=raw_yaml,
                     )
                 action = "updated"
@@ -129,7 +136,6 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool):
                         name=name,
                         framework=framework,
                         description=description,
-                        compute_tier=tier,
                         config_yaml=raw_yaml,
                     )
                 action = "created"

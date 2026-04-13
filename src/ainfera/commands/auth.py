@@ -24,10 +24,18 @@ def auth():
 
 @auth.command("login")
 @click.option("--key", default=None, help="Ainfera API key (starts with ainf_)")
-@click.option("--api-url", default=None, help="Override API URL")
+@click.option("--api-url", default=None, help="Override API URL for this session")
 @click.pass_context
 def auth_login(ctx, key: str | None, api_url: str | None):
-    """Authenticate with an API key and save it to ~/.ainfera/config.yaml."""
+    """Authenticate with an API key and save it to ~/.ainfera/config.yaml.
+
+    \b
+    Examples:
+      ainfera auth login                              # interactive prompt
+      ainfera auth login --key ainf_xxx
+      AINFERA_API_KEY=ainf_xxx ainfera auth login
+      ainfera auth login --api-url https://api.staging.ainfera.ai
+    """
     json_output = ctx.obj.get("json", False)
 
     if key is None:
@@ -83,7 +91,13 @@ def auth_login(ctx, key: str | None, api_url: str | None):
 @auth.command("status")
 @click.pass_context
 def auth_status(ctx):
-    """Show current authentication status and API health."""
+    """Show current authentication status and API health.
+
+    \b
+    Examples:
+      ainfera auth status
+      ainfera --json auth status
+    """
     json_output = ctx.obj.get("json", False)
 
     api_key = get_api_key()

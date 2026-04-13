@@ -25,7 +25,14 @@ def trust():
 @click.argument("agent_id", required=False)
 @click.pass_context
 def score_cmd(ctx, agent_id: str | None):
-    """Show trust score with dimension breakdown."""
+    """Show trust score with dimension breakdown.
+
+    \b
+    Examples:
+      ainfera trust score                       # uses default agent
+      ainfera trust score 8e7b4d6e-...
+      ainfera --json trust score 8e7b4d6e-...
+    """
     json_output = ctx.obj.get("json", False)
     agent_id = _resolve_agent_id(agent_id)
 

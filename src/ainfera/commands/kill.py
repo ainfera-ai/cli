@@ -18,7 +18,15 @@ from ainfera.ui.console import console, print_error, print_header, print_success
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def kill(ctx, agent_id: str | None, reason: str, unkill: bool, yes: bool):
-    """Trigger or clear the kill switch for an agent."""
+    """Trigger or clear the kill switch for an agent.
+
+    \b
+    Examples:
+      ainfera kill 8e7b4d6e-...
+      ainfera kill 8e7b4d6e-... --reason "manual_test"
+      ainfera kill 8e7b4d6e-... --unkill            # clear quarantine
+      ainfera kill 8e7b4d6e-... --yes               # skip confirmation
+    """
     json_output = ctx.obj.get("json", False)
     api_key = ensure_authenticated()
     client = AinferaClient(api_key=api_key, api_url=get_api_url())
@@ -74,7 +82,7 @@ def kill(ctx, agent_id: str | None, reason: str, unkill: bool, yes: bool):
             console.print("  [ainfera.error bold]\u25c6 KILL SWITCH TRIGGERED[/]")
             console.print()
             console.print(f"  Agent:    [bold]{result.get('name', agent_id[:12])}[/]")
-            console.print(f"  Status:   [ainfera.error]quarantined[/]")
+            console.print("  Status:   [ainfera.error]quarantined[/]")
             console.print(f"  Reason:   [ainfera.muted]{reason}[/]")
             console.print(
                 f"  Time:     [ainfera.muted]{result.get('killed_at', 'now')}[/]"

@@ -79,5 +79,5 @@ def login(ctx, key: str | None, api_url: str | None):
         click.echo(json.dumps({"status": "authenticated", "api_url": api_url}))
     else:
         print_success("Authenticated successfully")
-        console.print(f"  [ainfera.muted]Config saved to ~/.ainfera/config.yaml[/]")
+        console.print("  [ainfera.muted]Config saved to ~/.ainfera/config.yaml[/]")
         console.print()

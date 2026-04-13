@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 
-from click.testing import CliRunner
 
 from ainfera.cli import main
 from ainfera.config.yaml_parser import AinferaConfig, generate_yaml, parse_yaml

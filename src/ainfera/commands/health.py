@@ -8,7 +8,7 @@ import click
 import httpx
 
 from ainfera.config.settings import get_api_url
-from ainfera.ui.console import console, print_error, print_success
+from ainfera.ui.console import print_error, print_success
 
 
 @click.command()
@@ -53,6 +53,7 @@ def health(ctx):
         return
 
     version = data.get("version", "?")
-    db = data.get("db", data.get("database", "ok"))
-    redis = data.get("redis", "ok")
+    services = data.get("services") or {}
+    db = services.get("db", data.get("db", "?"))
+    redis = services.get("redis", data.get("redis", "?"))
     print_success(f"API healthy. Version: {version}. DB: {db}. Redis: {redis}.")

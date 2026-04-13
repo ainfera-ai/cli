@@ -10,7 +10,7 @@ import click
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from ainfera.ui.console import console, print_error, print_header, print_success
+from ainfera.ui.console import console, print_header, print_success
 
 _FRAMEWORKS = [
     ("langchain", "LangChain"),
@@ -49,7 +49,14 @@ def init(
     tier: str | None,
     force: bool,
 ):
-    """Create an ainfera.yaml config file in the current directory."""
+    """Create an ainfera.yaml config file in the current directory.
+
+    \b
+    Examples:
+      ainfera init                                            # interactive
+      ainfera init --name my-agent --framework langchain --tier standard
+      ainfera init --force                                    # overwrite existing
+    """
     json_output = ctx.obj.get("json", False)
     config_path = Path("ainfera.yaml")
 

@@ -9,7 +9,7 @@ from rich.table import Table
 
 from ainfera.api.client import AinferaClient
 from ainfera.config.settings import ensure_authenticated, get_api_url
-from ainfera.ui.console import console, print_error, print_success
+from ainfera.ui.console import console, print_success
 from ainfera.ui.formatters import (
     format_agent_panel,
     format_agent_status,
@@ -23,11 +23,18 @@ def agents():
 
 
 @agents.command("list")
-@click.option("--page", default=1, type=int)
-@click.option("--per-page", default=20, type=int)
+@click.option("--page", default=1, type=int, help="Page number (default: 1)")
+@click.option("--per-page", default=20, type=int, help="Items per page (default: 20)")
 @click.pass_context
 def list_cmd(ctx, page: int, per_page: int):
-    """List your agents."""
+    """List your agents.
+
+    \b
+    Examples:
+      ainfera agents list
+      ainfera agents list --per-page 50
+      ainfera --json agents list | jq '.items[].name'
+    """
     json_output = ctx.obj.get("json", False)
     client = _client()
     try:
@@ -82,7 +89,13 @@ def list_cmd(ctx, page: int, per_page: int):
 @click.argument("agent_id")
 @click.pass_context
 def get_cmd(ctx, agent_id: str):
-    """Show detailed info for a single agent."""
+    """Show detailed info for a single agent.
+
+    \b
+    Examples:
+      ainfera agents get 8e7b4d6e-...
+      ainfera --json agents get 8e7b4d6e-... | jq .agent.status
+    """
     json_output = ctx.obj.get("json", False)
     client = _client()
     try:
@@ -111,22 +124,43 @@ def get_cmd(ctx, agent_id: str):
 
 @agents.command("create")
 @click.option("--name", required=True, help="Agent name")
-@click.option("--framework", required=True, help="Agent framework")
+@click.option(
+    "--framework",
+    required=True,
+    type=click.Choice(
+        ["langchain", "crewai", "autogen", "adk", "openai_sdk", "custom"],
+        case_sensitive=False,
+    ),
+    help="Agent framework",
+)
 @click.option("--description", default=None, help="Optional description")
-@click.option("--tier", default=None, help="Compute tier (basic/standard/gpu)")
+@click.option(
+    "--tier",
+    default=None,
+    type=click.Choice(["basic", "standard", "gpu"], case_sensitive=False),
+    help="Compute tier (encoded into config_yaml)",
+)
 @click.pass_context
 def create_cmd(
     ctx, name: str, framework: str, description: str | None, tier: str | None
 ):
-    """Create a new agent."""
+    """Create a new agent on the platform.
+
+    \b
+    Examples:
+      ainfera agents create --name my-agent --framework langchain
+      ainfera agents create --name analyzer --framework crewai --description 'Data analysis crew'
+      ainfera agents create --name bot --framework openai_sdk --tier gpu
+    """
     json_output = ctx.obj.get("json", False)
+    config_yaml = _tier_yaml(tier) if tier else None
     client = _client()
     try:
         agent = client.create_agent(
             name=name,
             framework=framework,
             description=description,
-            compute_tier=tier,
+            config_yaml=config_yaml,
         )
     finally:
         client.close()
@@ -146,7 +180,13 @@ def create_cmd(
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def delete_cmd(ctx, agent_id: str, yes: bool):
-    """Delete an agent."""
+    """Delete an agent.
+
+    \b
+    Examples:
+      ainfera agents delete 8e7b4d6e-...
+      ainfera agents delete 8e7b4d6e-... --yes
+    """
     json_output = ctx.obj.get("json", False)
     client = _client()
     try:
@@ -179,3 +219,12 @@ def delete_cmd(ctx, agent_id: str, yes: bool):
 def _client() -> AinferaClient:
     api_key = ensure_authenticated()
     return AinferaClient(api_key=api_key, api_url=get_api_url())
+
+
+def _tier_yaml(tier: str) -> str:
+    return (
+        'version: "1"\n'
+        "agent:\n"
+        "  compute:\n"
+        f"    tier: {tier}\n"
+    )

@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 import httpx
 
+from ainfera import __version__
 from ainfera.utils.errors import handle_api_error
 
 
@@ -17,7 +18,7 @@ class AinferaClient:
             base_url=api_url,
             headers={
                 "X-Ainfera-Key": api_key,
-                "User-Agent": "ainfera-cli/0.1.0",
+                "User-Agent": f"ainfera-cli/{__version__}",
             },
             timeout=30.0,
         )
@@ -28,14 +29,19 @@ class AinferaClient:
             response = self.client.request(method, path, **kwargs)
         except httpx.ConnectError:
             raise click.ClickException(
-                f"Cannot connect to Ainfera API at {self.api_url}\n"
-                "  Check your network connection or API URL."
+                f"Cannot reach API at {self.api_url}. Is the server running?"
             )
         except httpx.TimeoutException:
             raise click.ClickException(
-                "Request timed out. The Ainfera API may be experiencing issues.\n"
-                "  Try again or check https://status.ainfera.ai"
+                "Request timed out after 30s. The API might be overloaded."
             )
+        except httpx.HTTPError as e:
+            msg = str(e).lower()
+            if "ssl" in msg or "certificate" in msg:
+                raise click.ClickException(
+                    "SSL certificate error. Check your network configuration."
+                )
+            raise click.ClickException(f"Network error: {e}")
 
         if response.status_code >= 400:
             handle_api_error(response)
@@ -57,32 +63,35 @@ class AinferaClient:
     def create_agent(
         self,
         name: str,
-        framework: str,
+        framework: str = "custom",
         repo_url: str | None = None,
         branch: str = "main",
-        config_yaml: str = "",
+        config_yaml: str | None = None,
         description: str | None = None,
-        compute_tier: str | None = None,
+        is_public: bool | None = None,
     ) -> dict:
-        payload: dict = {
-            "name": name,
-            "framework": framework,
-            "repo_url": repo_url,
-            "branch": branch,
-            "config_yaml": config_yaml,
-        }
+        payload: dict = {"name": name, "framework": framework, "branch": branch}
+        if repo_url is not None:
+            payload["repo_url"] = repo_url
+        if config_yaml is not None:
+            payload["config_yaml"] = config_yaml
         if description is not None:
             payload["description"] = description
-        if compute_tier is not None:
-            payload["compute_tier"] = compute_tier
+        if is_public is not None:
+            payload["is_public"] = is_public
         return self._request("POST", "/v1/agents", json=payload)
 
     def update_agent(self, agent_id: str, **fields) -> dict:
-        return self._request("PATCH", f"/v1/agents/{agent_id}", json=fields)
+        allowed = {
+            "name", "description", "framework", "repo_url",
+            "branch", "config_yaml", "status", "is_public",
+        }
+        payload = {k: v for k, v in fields.items() if k in allowed and v is not None}
+        return self._request("PATCH", f"/v1/agents/{agent_id}", json=payload)
 
     def create_agent_from_config(self, config_yaml: str) -> dict:
         return self._request(
-            "POST", "/v1/agents/from-config", json={"config_yaml": config_yaml}
+            "POST", "/v1/agents/from-config", json={"config": config_yaml}
         )
 
     def delete_agent(self, agent_id: str) -> None:
@@ -101,9 +110,7 @@ class AinferaClient:
         return self._request("POST", f"/v1/agents/{agent_id}/deploy")
 
     def kill_agent(self, agent_id: str, reason: str = "manual_kill") -> dict:
-        return self._request(
-            "POST", f"/v1/agents/{agent_id}/kill", json={"reason": reason}
-        )
+        return self._request("POST", f"/v1/agents/{agent_id}/kill")
 
     def unkill_agent(self, agent_id: str) -> dict:
         return self._request("DELETE", f"/v1/agents/{agent_id}/kill")
@@ -141,7 +148,11 @@ class AinferaClient:
             )
         except httpx.ConnectError:
             raise click.ClickException(
-                f"Cannot connect to Ainfera API at {self.api_url}"
+                f"Cannot reach API at {self.api_url}. Is the server running?"
+            )
+        except httpx.TimeoutException:
+            raise click.ClickException(
+                "Request timed out after 30s. The API might be overloaded."
             )
         if response.status_code >= 400:
             handle_api_error(response)

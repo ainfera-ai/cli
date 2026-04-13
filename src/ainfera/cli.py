@@ -18,14 +18,28 @@ from ainfera.commands.trust import trust
 
 @click.group()
 @click.version_option(version=__version__, prog_name="ainfera")
-@click.option("--json", "json_output", is_flag=True, help="Output as JSON")
+@click.option("--json", "json_output", is_flag=True, help="Output raw JSON instead of formatted tables")
+@click.option("--api-url", default=None, help="Override the configured API URL for this command")
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging")
 @click.pass_context
-def main(ctx, json_output: bool, verbose: bool):
-    """Ainfera \u2014 Deploy AI agents with trust scores, kill switches, and billing."""
+def main(ctx, json_output: bool, api_url: str | None, verbose: bool):
+    """Ainfera \u2014 Deploy AI agents with trust scores, kill switches, and billing.
+
+    \b
+    Common workflows:
+      ainfera auth login                    Authenticate with your API key
+      ainfera init                          Scaffold ainfera.yaml in this folder
+      ainfera deploy                        Deploy your agent to the platform
+      ainfera status                        Show platform + auth overview
+      ainfera agents list                   List your agents
+      ainfera trust score <agent-id>        Check an agent's trust score
+    """
     ctx.ensure_object(dict)
     ctx.obj["json"] = json_output
     ctx.obj["verbose"] = verbose
+    if api_url:
+        import os
+        os.environ["AINFERA_API_URL"] = api_url
 
 
 main.add_command(auth)

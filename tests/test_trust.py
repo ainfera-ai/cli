@@ -115,30 +115,37 @@ def test_kill_unkill(mock_api_key):
         mock_client.unkill_agent.assert_called_once()
 
 
-def test_status_all(mock_api_key):
-    """ainfera status --all should list agents."""
+def test_status_overview(mock_api_key):
+    """ainfera status should render the platform overview panel."""
     runner = CliRunner()
-    mock_client = MagicMock()
-    mock_client.list_agents.return_value = {
-        "items": [
-            {
-                "id": "agent-1",
-                "name": "agent-one",
-                "framework": "langchain",
-                "status": "running",
-                "current_trust_score": 847,
-                "trust_grade": "AA",
-            }
-        ]
+
+    fake_health = MagicMock()
+    fake_health.status_code = 200
+    fake_health.json.return_value = {
+        "status": "ok",
+        "version": "0.1.0",
+        "services": {"db": "ok", "redis": "ok"},
+        "stats": None,
     }
+    fake_httpx_client = MagicMock()
+    fake_httpx_client.__enter__.return_value = fake_httpx_client
+    fake_httpx_client.__exit__.return_value = False
+    fake_httpx_client.get.return_value = fake_health
+
+    mock_client = MagicMock()
+    mock_client.health.return_value = {"status": "ok", "user": "tester"}
 
     with (
+        patch("ainfera.commands.status.httpx.Client", return_value=fake_httpx_client),
         patch("ainfera.commands.status.AinferaClient", return_value=mock_client),
-        patch("ainfera.commands.status.ensure_authenticated", return_value="ainf_test"),
     ):
-        result = runner.invoke(main, ["status", "--all"])
+        result = runner.invoke(main, ["--json", "status"])
         assert result.exit_code == 0
-        assert "agent-one" in result.output
+        data = json.loads(result.output)
+        assert data["api_online"] is True
+        assert data["authenticated"] is True
+        assert data["user"] == "tester"
+        assert data["services"]["db"] == "ok"
 
 
 def test_login_validates_key_format():
