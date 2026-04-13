@@ -1,0 +1,48 @@
+[project]
+name = "ainfera"
+version = "0.1.0"
+description = "CLI for the Ainfera AI agent infrastructure platform"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [{name = "Ainfera Technologies", email = "labs@ainfera.ai"}]
+keywords = ["ai", "agents", "trust", "infrastructure", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "ruff", "mypy"]
+
+[project.scripts]
+ainfera = "ainfera.cli:main"
+
+[project.urls]
+Homepage = "https://ainfera.ai"
+Documentation = "https://docs.ainfera.ai"
+Repository = "https://github.com/ainfera-ai/cli"
+Changelog = "https://github.com/ainfera-ai/cli/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ainfera"]
+
+[tool.ruff]
+target-version = "py310"
