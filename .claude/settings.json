@@ -16,12 +16,27 @@
       "Bash(grep *)",
       "Bash(head *)",
       "Bash(tail *)",
-      "Bash(wc *)"
+      "Bash(wc *)",
+      "Bash(jq *)"
     ],
     "deny": [
       "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
       "Bash(twine upload *)",
       "Bash(pip install --break-system-packages *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix --quiet $CLAUDE_FILE_PATH 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }

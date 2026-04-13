@@ -1,21 +1,13 @@
 ---
-description: Tag a new release and trigger PyPI publish
+description: Tag a release and publish to PyPI
 ---
 
-Ask me what version to release (e.g., 0.2.0, 0.3.0).
-
-Then:
+Ask what version to release, then:
 1. Update version in pyproject.toml
-2. Update CHANGELOG.md with the new version and changes
+2. Update CHANGELOG.md
 3. Commit: "release: v{version}"
-4. Tag: git tag v{version}
-5. Push: git push origin main --tags
+4. Tag: `git tag v{version}`
+5. Push: `git push origin main --tags`
 
-The GitHub Actions workflow (.github/workflows/publish.yml) will automatically
-build and publish to PyPI when the v* tag is pushed.
-
-Verify after ~2 minutes:
-```bash
-pip install ainfera=={version}
-ainfera --version
-```
+GitHub Actions publishes to PyPI automatically on tag push.
+Verify after ~2 min: `pip install ainfera=={version}`

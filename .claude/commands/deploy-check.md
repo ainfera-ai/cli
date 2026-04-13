@@ -1,17 +1,8 @@
 ---
-description: Verify the CLI connects to the live API
+description: Test CLI against live API
 ---
-
-Test the CLI against the live production API:
 
 ```bash
 ainfera health
-ainfera agents list
+ainfera agents list 2>/dev/null || echo "Auth needed: run 'ainfera auth login'"
 ```
-
-If not authenticated:
-```bash
-ainfera auth login
-```
-
-Report the connection status and any errors.
