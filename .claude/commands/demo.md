@@ -1,0 +1,1 @@
+Run the full deploy demo sequence locally without hitting the real API. Simulates stage demo output with Rich formatting, timing delays, and trust score visualization. Use mock data: agent "my-agent", framework "langchain", DID "did:ainfera:agent:a7f3", trust AAA 942, cost $0.003/invocation, floor 400. Run: python -m ainfera deploy --demo

@@ -4,8 +4,11 @@
       "Bash(pip install *)",
       "Bash(python -m pytest *)",
       "Bash(python -m build)",
+      "Bash(pytest*)",
       "Bash(ruff check *)",
       "Bash(ruff format *)",
+      "Bash(ruff*)",
+      "Bash(black*)",
       "Bash(mypy *)",
       "Bash(ainfera *)",
       "Bash(curl *)",
@@ -17,12 +20,17 @@
       "Bash(head *)",
       "Bash(tail *)",
       "Bash(wc *)",
-      "Bash(jq *)"
+      "Bash(jq *)",
+      "Bash(mkdir*)",
+      "Bash(cp*)",
+      "Bash(mv*)",
+      "Bash(touch*)"
     ],
     "deny": [
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
-      "Bash(twine upload *)",
+      "Bash(twine*)",
+      "Bash(wget*)",
       "Bash(pip install --break-system-packages *)"
     ]
   },
