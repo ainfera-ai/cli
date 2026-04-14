@@ -2,22 +2,25 @@
 
 from rich.theme import Theme
 
-# Ainfera brand colors mapped to Rich styles
+# Ainfera DS v2 — navy brand palette
 AINFERA_THEME = Theme(
     {
-        "ainfera.brand": "bold #C4922A",  # Aureate
-        "ainfera.success": "bold #5B8C6A",  # Sage
-        "ainfera.error": "bold #C4453A",  # Vermillion
-        "ainfera.warning": "#D4A43A",  # Saffron
-        "ainfera.info": "#4A7FB5",  # Dusk Blue
-        "ainfera.muted": "#64748B",  # Steel
-        "ainfera.highlight": "bold #E07A3A",  # Ember
-        "ainfera.header": "bold #F7F5F0 on #0F1419",  # Ivory on Obsidian
+        "ainfera.brand": "bold #2878B5",
+        "ainfera.hover": "#4A9FD9",
+        "ainfera.highlight": "bold #7EC4EF",
+        "ainfera.success": "bold #5B8C6A",
+        "ainfera.warning": "#D4A43A",
+        "ainfera.error": "bold #C4453A",
+        "ainfera.info": "#4A9FD9",
+        "ainfera.muted": "#64748B",
+        "ainfera.surface": "#001E41",
+        "ainfera.text": "#F7F5F0",
+        "ainfera.header": "bold #F7F5F0 on #001E41",
         # Trust grade colors
         "trust.aaa": "bold #5B8C6A",
         "trust.aa": "#5B8C6A",
         "trust.a": "#6B9C5A",
-        "trust.bbb": "#C4922A",
+        "trust.bbb": "#2878B5",
         "trust.bb": "#D4A43A",
         "trust.b": "#E07A3A",
         "trust.ccc": "bold #C4453A",

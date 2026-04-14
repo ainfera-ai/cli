@@ -7,6 +7,7 @@ import click
 from ainfera import __version__
 from ainfera.commands.agents import agents
 from ainfera.commands.auth import auth
+from ainfera.commands.billing import billing
 from ainfera.commands.deploy import deploy
 from ainfera.commands.health import health
 from ainfera.commands.init import init
@@ -51,6 +52,7 @@ main.add_command(deploy)
 main.add_command(status)
 main.add_command(kill)
 main.add_command(logs)
+main.add_command(billing)
 
 
 if __name__ == "__main__":
