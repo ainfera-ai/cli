@@ -133,7 +133,13 @@ def test_status_overview(mock_api_key):
     fake_httpx_client.get.return_value = fake_health
 
     mock_client = MagicMock()
-    mock_client.health.return_value = {"status": "ok", "user": "tester"}
+    mock_client.list_agents.return_value = {
+        "agents": [
+            {"id": "a1", "status": "published", "current_trust_score": 80},
+            {"id": "a2", "status": "draft"},
+        ],
+        "total": 2,
+    }
 
     with (
         patch("ainfera.commands.status.httpx.Client", return_value=fake_httpx_client),
@@ -144,8 +150,10 @@ def test_status_overview(mock_api_key):
         data = json.loads(result.output)
         assert data["api_online"] is True
         assert data["authenticated"] is True
-        assert data["user"] == "tester"
         assert data["services"]["db"] == "ok"
+        assert data["stats"]["total_agents"] == 2
+        assert data["stats"]["published_agents"] == 1
+        assert data["stats"]["draft_agents"] == 1
 
 
 def test_login_validates_key_format():

@@ -10,15 +10,34 @@ def handle_api_error(response: httpx.Response) -> None:
     """Raise a click.ClickException with a friendly message for API errors."""
     status = response.status_code
 
-    messages = {
-        401: "Authentication failed. Run 'ainfera auth login' to set your API key.",
-        403: "Insufficient permissions for this action.",
-        404: "Agent not found.",
-        429: f"Rate limit exceeded. Try again in {response.headers.get('retry-after', '30')} seconds.",
-    }
+    def _detail() -> str:
+        try:
+            body = response.json()
+        except Exception:
+            return response.text or ""
+        if isinstance(body, dict):
+            return str(body.get("detail") or body.get("message") or body)
+        return str(body)
 
-    if status in messages:
-        raise click.ClickException(messages[status])
+    if status == 401:
+        raise click.ClickException(
+            "Authentication failed. Run 'ainfera auth login' to set your API key."
+        )
+    if status == 403:
+        raise click.ClickException("Insufficient permissions for this action.")
+    if status == 404:
+        path = str(response.request.url.path) if response.request else ""
+        tail = path.rstrip("/").rsplit("/", 1)[-1]
+        if tail and tail not in {"agents", "trust", "v1"}:
+            raise click.ClickException(f"Agent not found: {tail}")
+        raise click.ClickException("Not found.")
+    if status == 422:
+        raise click.ClickException(f"Invalid request: {_detail()}")
+    if status == 429:
+        retry = response.headers.get("retry-after", "30")
+        raise click.ClickException(
+            f"Rate limit exceeded. Try again in {retry} seconds."
+        )
 
     if status >= 500:
         raise click.ClickException(
@@ -26,9 +45,4 @@ def handle_api_error(response: httpx.Response) -> None:
         )
 
     if status >= 400:
-        detail = ""
-        try:
-            detail = response.json().get("detail", response.text)
-        except Exception:
-            detail = response.text
-        raise click.ClickException(f"API error ({status}): {detail}")
+        raise click.ClickException(f"API error ({status}): {_detail()}")

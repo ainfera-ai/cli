@@ -10,7 +10,7 @@ import click
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from ainfera.ui.console import console, print_header, print_success
+from ainfera.ui.console import console, print_error, print_header, print_success
 
 _FRAMEWORKS = [
     ("langchain", "LangChain"),
@@ -40,6 +40,11 @@ _TIERS = ["basic", "standard", "gpu"]
     help="Compute tier",
 )
 @click.option("--force", is_flag=True, help="Overwrite existing ainfera.yaml")
+@click.option(
+    "--non-interactive",
+    is_flag=True,
+    help="Use defaults instead of prompting (for scripts/CI)",
+)
 @click.pass_context
 def init(
     ctx,
@@ -48,6 +53,7 @@ def init(
     description: str | None,
     tier: str | None,
     force: bool,
+    non_interactive: bool,
 ):
     """Create an ainfera.yaml config file in the current directory.
 
@@ -58,11 +64,17 @@ def init(
       ainfera init --force                                    # overwrite existing
     """
     json_output = ctx.obj.get("json", False)
+    silent = json_output or non_interactive
     config_path = Path("ainfera.yaml")
 
     if config_path.exists() and not force:
-        if json_output:
-            click.echo(json.dumps({"error": "ainfera.yaml already exists"}))
+        if silent:
+            if json_output:
+                click.echo(json.dumps({"error": "ainfera.yaml already exists"}))
+            else:
+                print_error(
+                    "ainfera.yaml already exists. Re-run with --force to overwrite."
+                )
             raise SystemExit(1)
         if not click.confirm(
             "  ainfera.yaml already exists. Overwrite?", default=False
@@ -79,20 +91,20 @@ def init(
         default_name = os.path.basename(os.getcwd())
         name = (
             default_name
-            if json_output
+            if silent
             else click.prompt("  Agent name", default=default_name)
         )
 
     if framework is None:
-        framework = _prompt_framework(json_output)
+        framework = "custom" if silent else _prompt_framework(json_output)
 
-    if description is None and not json_output:
+    if description is None and not silent:
         description = click.prompt("  Description", default="", show_default=False)
 
     if tier is None:
         tier = (
             "standard"
-            if json_output
+            if silent
             else click.prompt(
                 "  Compute tier",
                 default="standard",

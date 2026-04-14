@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (2026-04-14)
+
+### Added
+- `ainfera status` now surfaces agent counts (total / published / draft) and average trust score when authenticated — derived from `GET /v1/agents` instead of relying on `/health` stats
+- `ainfera init --non-interactive` for scripts and CI (skips prompts, uses sensible defaults; pairs well with `--force`)
+- `scripts/demo.sh` — end-to-end investor-pitch demo (status → list → create → init → deploy → trust → list) driven entirely by the CLI
+
+### Changed
+- `ainfera status` auth indicator is now verified against an authenticated endpoint, so invalid keys correctly show as unauthenticated
+- Error messages: `404` now echoes the missing id ("Agent not found: {id}"), `422` surfaces the API's validation `detail`, and JSON/`message` response bodies are handled uniformly
+
 ## 0.2.1 (2026-04-13)
 
 ### Fixed

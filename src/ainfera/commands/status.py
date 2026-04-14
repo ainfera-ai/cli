@@ -50,12 +50,34 @@ def status(ctx):
 
     auth_ok = False
     auth_user: str | None = None
+    agent_stats: dict | None = None
     if api_key and health_data:
         ac = AinferaClient(api_key=api_key, api_url=api_url)
         try:
-            verify = ac.health()
+            listing = ac.list_agents(page=1, per_page=50)
             auth_ok = True
-            auth_user = verify.get("user") or verify.get("account")
+            items = (
+                listing.get("agents")
+                or listing.get("items")
+                or (listing if isinstance(listing, list) else [])
+            )
+            total = listing.get("total") if isinstance(listing, dict) else None
+            if total is None:
+                total = len(items)
+            published = sum(1 for a in items if a.get("status") == "published")
+            draft = sum(1 for a in items if a.get("status") == "draft")
+            scores = [
+                a.get("current_trust_score")
+                for a in items
+                if isinstance(a.get("current_trust_score"), (int, float))
+            ]
+            avg_trust = round(sum(scores) / len(scores), 1) if scores else None
+            agent_stats = {
+                "total_agents": total,
+                "published_agents": published,
+                "draft_agents": draft,
+                "avg_trust_score": avg_trust,
+            }
         except click.ClickException:
             auth_ok = False
         finally:
@@ -67,7 +89,7 @@ def status(ctx):
         "api_error": health_error,
         "api_version": (health_data or {}).get("version"),
         "services": (health_data or {}).get("services", {}),
-        "stats": (health_data or {}).get("stats"),
+        "stats": agent_stats or (health_data or {}).get("stats"),
         "cli_version": __version__,
         "authenticated": bool(api_key) and auth_ok,
         "user": auth_user,
