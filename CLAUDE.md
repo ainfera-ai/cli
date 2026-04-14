@@ -8,7 +8,7 @@ check trust scores, and manage their agents from the terminal.
 The CLI is the star of every demo. When the founder types `ainfera deploy` on stage
 and a trust score appears 5 seconds later, that's this repo.
 
-Company: Ainfera Pte. Ltd., Singapore. Pre-funding stage.
+Company: Ainfera. Pre-funding stage.
 
 ## Design Philosophy
 - The CLI is a thin client — it calls the platform-api for everything
