@@ -111,7 +111,7 @@ def render_dimension_bar(value: float, width: int = 18) -> str:
         color = "ainfera.warning"
     else:
         color = "ainfera.error"
-    return f"[{color}]{'\u2588' * filled}[/{color}]{'\u2591' * empty}  {value:.2f}"
+    return f"[{color}]{'█' * filled}[/{color}]{'░' * empty}  {value:.2f}"
 
 
 def format_trust_panel(trust_data: dict) -> Panel:

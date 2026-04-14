@@ -31,7 +31,7 @@ ainfera deploy
 ainfera agents list
 
 # Check trust score for an agent
-ainfera trust score <agent-id>
+ainfera trust <agent-id>
 
 # Stream live logs
 ainfera logs <agent-id> --follow
@@ -40,18 +40,24 @@ ainfera logs <agent-id> --follow
 ainfera kill <agent-id>
 ```
 
+Want to see what deploy looks like before you connect the real API? Run
+`ainfera deploy --demo` — the stage-ready showcase with mock data, zero
+network calls.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `ainfera login` | Authenticate with your API key (alias for `auth login`) |
 | `ainfera auth login` | Authenticate with your API key |
 | `ainfera auth status` | Show current auth + API health |
 | `ainfera status` | Full platform overview (API/DB/Redis/auth/CLI) |
 | `ainfera health` | Unauthenticated API health check |
 | `ainfera init` | Scaffold an `ainfera.yaml` |
-| `ainfera deploy` | Deploy from `ainfera.yaml` |
+| `ainfera deploy` | Deploy from `ainfera.yaml` (add `--demo` for the showcase) |
 | `ainfera agents list/get/create/delete` | Manage agents |
-| `ainfera trust score/history/anomalies` | Trust score views |
+| `ainfera trust [--history\|--anomalies]` | Trust score views |
+| `ainfera billing` | Usage and cost breakdown |
 | `ainfera kill` | Trigger or clear kill switch |
 | `ainfera logs` | View or stream execution logs |
 
@@ -113,6 +119,47 @@ agent:
   billing:
     model: per-call
     price_per_call: 0.003
+```
+
+## GitHub Actions
+
+This repo ships three composite actions under `actions/` that wrap the CLI
+for CI workflows:
+
+```yaml
+# Deploy on push to main
+- uses: ainfera-ai/cli/actions/deploy-agent@v0
+  with:
+    api-key: ${{ secrets.AINFERA_API_KEY }}
+
+# Fail PRs whose trust score drops below 700
+- uses: ainfera-ai/cli/actions/trust-check@v0
+  with:
+    api-key: ${{ secrets.AINFERA_API_KEY }}
+    min-score: "700"
+
+# Validate ainfera.yaml in PRs and run your test suite
+- uses: ainfera-ai/cli/actions/sandbox-test@v0
+  with:
+    api-key: ${{ secrets.AINFERA_API_KEY }}
+    test-command: pytest -xvs
+```
+
+Each action has its own README in `actions/<name>/README.md`.
+
+## Python SDK
+
+The `ainfera` package also exposes a typed, synchronous SDK for
+programmatic use — handy in agent servers, notebooks, or custom
+automation:
+
+```python
+from ainfera.sdk import AinferaSDK
+
+with AinferaSDK(api_key="ainf_...") as sdk:
+    agent = sdk.create_agent(name="my-agent", framework="langchain")
+    trust = sdk.get_trust_score(agent["id"])
+    print(trust["score"], trust["grade"])
 ```
 
 ## Links

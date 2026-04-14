@@ -117,7 +117,7 @@ def get_cmd(ctx, agent_id: str):
     if trust and trust.get("score") is not None:
         console.print()
         console.print(
-            f"  Trust Score  {format_trust_score(trust['score'], trust.get('grade', '\u2014'))}"
+            f"  Trust Score  {format_trust_score(trust['score'], trust.get('grade', '—'))}"
         )
     console.print()
 

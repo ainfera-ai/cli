@@ -1,4 +1,4 @@
-"""ainfera trust — trust score commands."""
+"""ainfera trust — trust score command (flat interface with flags)."""
 
 from __future__ import annotations
 
@@ -16,96 +16,68 @@ from ainfera.ui.formatters import (
 )
 
 
-@click.group()
-def trust():
-    """View trust scores, history, and anomalies."""
-
-
-@trust.command("score")
+@click.command()
 @click.argument("agent_id", required=False)
+@click.option("--history", is_flag=True, help="Show trust score history instead of current score")
+@click.option("--anomalies", is_flag=True, help="Show detected anomalies instead of current score")
+@click.option("--days", type=int, default=30, help="History window in days (with --history)")
 @click.pass_context
-def score_cmd(ctx, agent_id: str | None):
-    """Show trust score with dimension breakdown.
+def trust(ctx, agent_id: str | None, history: bool, anomalies: bool, days: int):
+    """View trust scores, history, and anomalies.
 
     \b
     Examples:
-      ainfera trust score                       # uses default agent
-      ainfera trust score 8e7b4d6e-...
-      ainfera --json trust score 8e7b4d6e-...
+      ainfera trust                          # default agent, current score
+      ainfera trust 8e7b4d6e-...             # explicit agent
+      ainfera trust --history --days 7
+      ainfera trust --anomalies
+      ainfera --json trust                   # machine-readable
     """
     json_output = ctx.obj.get("json", False)
-    agent_id = _resolve_agent_id(agent_id)
+    resolved = _resolve_agent_id(agent_id)
 
-    client = _client()
+    client = AinferaClient(api_key=ensure_authenticated(), api_url=get_api_url())
     try:
+        if anomalies:
+            with console.status("  [ainfera.muted]Fetching anomalies...[/]"):
+                data = client.get_anomalies(resolved)
+            if json_output:
+                click.echo(json.dumps(data))
+                return
+            print_header()
+            items = data.get("items", data.get("anomalies", []))
+            if items:
+                console.print(format_anomalies_table(items))
+            else:
+                console.print("  [ainfera.success]\u2713 No anomalies detected[/]")
+            console.print()
+            return
+
+        if history:
+            with console.status("  [ainfera.muted]Fetching trust history...[/]"):
+                data = client.get_trust_history(resolved)
+            if json_output:
+                click.echo(json.dumps(data))
+                return
+            print_header()
+            entries = data.get("items", data.get("history", []))
+            if entries:
+                console.print(format_trust_history_table(entries))
+            else:
+                console.print("  [ainfera.muted]No trust history yet.[/]")
+            console.print()
+            return
+
         with console.status("  [ainfera.muted]Fetching trust score...[/]"):
-            data = client.get_trust_score(agent_id)
+            data = client.get_trust_score(resolved)
+        if json_output:
+            click.echo(json.dumps(data))
+            return
+        print_header()
+        console.print(format_trust_panel(data))
+        console.print()
     finally:
         client.close()
-
-    if json_output:
-        click.echo(json.dumps(data))
-        return
-
-    print_header()
-    console.print(format_trust_panel(data))
-    console.print()
-
-
-@trust.command("history")
-@click.argument("agent_id", required=False)
-@click.pass_context
-def history_cmd(ctx, agent_id: str | None):
-    """Show trust score history."""
-    json_output = ctx.obj.get("json", False)
-    agent_id = _resolve_agent_id(agent_id)
-
-    client = _client()
-    try:
-        with console.status("  [ainfera.muted]Fetching trust history...[/]"):
-            data = client.get_trust_history(agent_id)
-    finally:
-        client.close()
-
-    if json_output:
-        click.echo(json.dumps(data))
-        return
-
-    print_header()
-    entries = data.get("items", data.get("history", []))
-    if entries:
-        console.print(format_trust_history_table(entries))
-    else:
-        console.print("  [ainfera.muted]No trust history yet.[/]")
-    console.print()
-
-
-@trust.command("anomalies")
-@click.argument("agent_id", required=False)
-@click.pass_context
-def anomalies_cmd(ctx, agent_id: str | None):
-    """Show detected anomalies for an agent."""
-    json_output = ctx.obj.get("json", False)
-    agent_id = _resolve_agent_id(agent_id)
-
-    client = _client()
-    try:
-        with console.status("  [ainfera.muted]Fetching anomalies...[/]"):
-            data = client.get_anomalies(agent_id)
-    finally:
-        client.close()
-
-    if json_output:
-        click.echo(json.dumps(data))
-        return
-
-    print_header()
-    items = data.get("items", data.get("anomalies", []))
-    if items:
-        console.print(format_anomalies_table(items))
-    else:
-        console.print("  [ainfera.success]\u2713 No anomalies detected[/]")
-    console.print()
 
 
 def _resolve_agent_id(agent_id: str | None) -> str:
@@ -117,7 +89,3 @@ def _resolve_agent_id(agent_id: str | None) -> str:
         )
         raise SystemExit(1)
     return resolved
-
-
-def _client() -> AinferaClient:
-    return AinferaClient(api_key=ensure_authenticated(), api_url=get_api_url())

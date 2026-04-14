@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0 (2026-04-14)
+
+### Added
+- `ainfera deploy --demo` — mock-data stage showcase: Panel header, five 400ms progress steps, success banner, and trust dimension table. No API calls.
+- Top-level `ainfera login` (alongside `ainfera auth login`) for a flatter entry point.
+- `ainfera trust` is now a single flat command accepting `--history`, `--anomalies`, and `--days`. Subcommand form (`trust score|history|anomalies`) removed.
+- `actions/` — three composite GitHub Actions bundled in this repo: `deploy-agent`, `trust-check`, `sandbox-test`.
+- `src/ainfera/sdk/` — typed synchronous SDK (`AinferaSDK`) for programmatic access. Ships in the same `ainfera` package.
+- `python -m ainfera` now works (added `__main__.py`).
+
+### Changed
+- `ainfera deploy` JSON output now includes `agent_id`, `name`, `framework`, `trust_score`, and `trust_grade` at the top level for easier scripting (the full `agent` object is still nested).
+- `ainfera init` auto-detects framework from `requirements.txt` / `package.json` when run non-interactively (e.g. CI, `--json`, piped stdin) and now emits JSON under a nested `config` key.
+- `generate_yaml()` / `parse_yaml()` now wrap config under `agent:` to match the schema `ainfera deploy` expects end-to-end.
+
+### Fixed
+- `ainfera deploy` tests pass — previous mismatch between generated YAML (flat) and the deploy parser (expected `agent:` wrapper) is resolved.
+- Unicode escape sequences removed from f-string expressions so the package imports cleanly on Python 3.10 and 3.11.
+
 ## 0.3.0 (2026-04-14)
 
 ### Added

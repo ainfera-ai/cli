@@ -12,6 +12,7 @@ from ainfera.commands.deploy import deploy
 from ainfera.commands.health import health
 from ainfera.commands.init import init
 from ainfera.commands.kill import kill
+from ainfera.commands.login import login
 from ainfera.commands.logs import logs
 from ainfera.commands.status import status
 from ainfera.commands.trust import trust
@@ -53,6 +54,7 @@ main.add_command(status)
 main.add_command(kill)
 main.add_command(logs)
 main.add_command(billing)
+main.add_command(login)
 
 
 if __name__ == "__main__":

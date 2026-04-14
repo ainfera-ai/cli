@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 import click
@@ -11,6 +12,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 
 from ainfera.ui.console import console, print_error, print_header, print_success
+from ainfera.utils.detect import detect_framework
 
 _FRAMEWORKS = [
     ("langchain", "LangChain"),
@@ -64,7 +66,8 @@ def init(
       ainfera init --force                                    # overwrite existing
     """
     json_output = ctx.obj.get("json", False)
-    silent = json_output or non_interactive
+    # Treat piped / non-TTY stdin as non-interactive so CliRunner and CI never hang on a prompt.
+    silent = json_output or non_interactive or not sys.stdin.isatty()
     config_path = Path("ainfera.yaml")
 
     if config_path.exists() and not force:
@@ -96,7 +99,11 @@ def init(
         )
 
     if framework is None:
-        framework = "custom" if silent else _prompt_framework(json_output)
+        if silent:
+            detected, _details = detect_framework(os.getcwd())
+            framework = detected or "custom"
+        else:
+            framework = _prompt_framework(json_output)
 
     if description is None and not silent:
         description = click.prompt("  Description", default="", show_default=False)
@@ -125,10 +132,13 @@ def init(
             json.dumps(
                 {
                     "path": str(config_path),
-                    "name": name,
                     "framework": framework,
-                    "description": description or "",
-                    "tier": tier,
+                    "config": {
+                        "name": name,
+                        "framework": framework,
+                        "description": description or "",
+                        "tier": tier,
+                    },
                 }
             )
         )

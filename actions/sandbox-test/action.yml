@@ -1,0 +1,51 @@
+name: Ainfera Sandbox Test
+description: Run ainfera deploy --dry-run and an optional test command in CI.
+author: Ainfera Technologies
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  api-key:
+    description: Ainfera API key (starts with ainf_).
+    required: true
+  config:
+    description: Path to ainfera.yaml.
+    required: false
+    default: ainfera.yaml
+  test-command:
+    description: Test command to run after the dry-run succeeds.
+    required: false
+    default: ""
+  api-url:
+    description: Override the Ainfera API URL.
+    required: false
+    default: https://api.ainfera.ai
+  python-version:
+    description: Python version to set up.
+    required: false
+    default: "3.11"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Ainfera CLI
+      shell: bash
+      run: pip install --upgrade ainfera
+
+    - name: Validate ainfera.yaml (dry run)
+      shell: bash
+      env:
+        AINFERA_API_KEY: ${{ inputs.api-key }}
+        AINFERA_API_URL: ${{ inputs.api-url }}
+      run: ainfera --json deploy --config '${{ inputs.config }}' --dry-run
+
+    - name: Run test command
+      if: ${{ inputs.test-command != '' }}
+      shell: bash
+      run: ${{ inputs.test-command }}

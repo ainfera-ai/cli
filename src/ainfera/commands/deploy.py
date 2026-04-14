@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import click
 import yaml
 from rich.panel import Panel
+from rich.table import Table
 
 from ainfera.api.client import AinferaClient
 from ainfera.config.settings import (
@@ -32,18 +34,28 @@ from ainfera.ui.console import console, print_error, print_header
     is_flag=True,
     help="Send raw YAML to POST /v1/agents/from-config",
 )
+@click.option(
+    "--demo",
+    is_flag=True,
+    help="Run the deploy showcase with mock data (no API calls)",
+)
 @click.pass_context
-def deploy(ctx, config_path: str, dry_run: bool, from_config: bool):
+def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
     """Deploy your agent from ainfera.yaml.
 
     \b
     Examples:
       ainfera deploy                                 # reads ./ainfera.yaml
+      ainfera deploy --demo                          # stage-ready showcase with mock data
       ainfera deploy --dry-run                       # show plan, don't call API
       ainfera deploy --config ./agents/bot.yaml
       ainfera deploy --from-config                   # send raw YAML to /v1/agents/from-config
     """
     json_output = ctx.obj.get("json", False)
+
+    if demo:
+        _run_demo(json_output=json_output)
+        return
 
     path = Path(config_path)
     if not path.exists():
@@ -144,8 +156,30 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool):
         if agent_id:
             set_default_agent(agent_id)
 
+        trust_score: int | None = None
+        trust_grade: str | None = None
+        if agent_id:
+            try:
+                trust_data = client.get_trust_score(agent_id)
+                trust_score = trust_data.get("score") or trust_data.get("overall_score")
+                trust_grade = trust_data.get("grade")
+            except Exception:
+                pass
+
         if json_output:
-            click.echo(json.dumps({"action": action, "agent": agent}))
+            click.echo(
+                json.dumps(
+                    {
+                        "action": action,
+                        "agent_id": agent_id,
+                        "name": name,
+                        "framework": framework,
+                        "trust_score": trust_score,
+                        "trust_grade": trust_grade,
+                        "agent": agent,
+                    }
+                )
+            )
             return
 
         _print_summary(
@@ -217,6 +251,86 @@ def _print_dry_run(
             padding=(0, 2),
         )
     )
+
+
+_DEMO_TRUST = {
+    "score": 942,
+    "grade": "AAA",
+    "dimensions": {
+        "Safety": 0.96,
+        "Reliability": 0.94,
+        "Quality": 0.93,
+        "Performance": 0.95,
+        "Reputation": 0.94,
+    },
+}
+
+
+def _run_demo(*, json_output: bool) -> None:
+    """Showcase deploy sequence with mock data — safe for stage demos."""
+    if json_output:
+        click.echo(
+            json.dumps(
+                {
+                    "demo": True,
+                    "agent_id": "a7f3",
+                    "name": "my-agent",
+                    "framework": "langchain",
+                    "trust_score": _DEMO_TRUST["score"],
+                    "trust_grade": _DEMO_TRUST["grade"],
+                    "dimensions": _DEMO_TRUST["dimensions"],
+                }
+            )
+        )
+        return
+
+    console.print()
+    console.print(
+        Panel(
+            "\n"
+            "  Agent:     [bold]my-agent[/]\n"
+            "  Framework: [ainfera.muted]LangChain (auto-detected)[/]\n"
+            "  DID:       [ainfera.muted]did:ainfera:agent:a7f3[/]\n",
+            title="[bold]Ainfera Deploy[/]",
+            border_style="ainfera.brand",
+            padding=(0, 2),
+        )
+    )
+    console.print()
+
+    steps = [
+        ("Provisioning sandbox...", "Docker (512MB, 1 CPU)"),
+        ("Computing trust score...", f"{_DEMO_TRUST['grade']} ({_DEMO_TRUST['score']})"),
+        ("Activating billing...", "$0.003/invocation"),
+        ("Arming kill switch...", "floor: 400"),
+        ("Registering protocols...", "MCP + A2A"),
+    ]
+    for label, detail in steps:
+        with console.status(f"  [ainfera.muted]{label}[/]"):
+            time.sleep(0.4)
+        console.print(
+            f"  [ainfera.brand]\u25b8[/] {label:<30} "
+            f"[ainfera.muted]{detail}[/]  [ainfera.success]\u2713[/]"
+        )
+
+    console.print()
+    console.print(
+        "  [ainfera.success]\u2713 Agent live\u2192[/] "
+        "[ainfera.brand]https://api.ainfera.ai/agent/a7f3[/]"
+    )
+    console.print()
+
+    table = Table(border_style="ainfera.muted", show_edge=True)
+    table.add_column("Dimension", style="bold")
+    table.add_column("Score", justify="center")
+    table.add_column("Bar", no_wrap=True)
+    for name, value in _DEMO_TRUST["dimensions"].items():
+        filled = int(value * 22)
+        empty = 22 - filled
+        bar = f"[ainfera.brand]{'█' * filled}[/]{'░' * empty}"
+        table.add_row(name, f"{value:.2f}", bar)
+    console.print(table)
+    console.print()
 
 
 def _print_summary(

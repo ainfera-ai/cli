@@ -69,26 +69,33 @@ _SECTION_COMMENTS = {
 
 
 def generate_yaml(config: AinferaConfig) -> str:
-    """Render config to YAML string with helpful comments."""
+    """Render config to YAML string wrapped in an ``agent:`` section."""
     data = config.model_dump(exclude_none=True)
-    raw = yaml.safe_dump(data, default_flow_style=False, sort_keys=False)
+    wrapped = {"version": "1", "agent": data}
+    raw = yaml.safe_dump(wrapped, default_flow_style=False, sort_keys=False)
 
-    # Inject section comments
     lines = raw.splitlines()
     result: list[str] = []
     for line in lines:
-        key = line.split(":")[0].strip() if ":" in line else ""
-        if key in _SECTION_COMMENTS and not line.startswith(" "):
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        key = stripped.split(":")[0] if ":" in stripped else ""
+        if key in _SECTION_COMMENTS and indent == 2:
             result.append("")
-            result.append(_SECTION_COMMENTS[key])
+            result.append(" " * indent + _SECTION_COMMENTS[key])
         result.append(line)
 
     return "\n".join(result).strip() + "\n"
 
 
 def parse_yaml(yaml_string: str) -> AinferaConfig:
-    """Parse ainfera.yaml string into config object."""
-    data = yaml.safe_load(yaml_string)
+    """Parse ainfera.yaml string into a config object.
+
+    Accepts both the wrapped ``agent:`` form and legacy flat form.
+    """
+    data = yaml.safe_load(yaml_string) or {}
+    if isinstance(data, dict) and "agent" in data and isinstance(data["agent"], dict):
+        data = data["agent"]
     return AinferaConfig(**data)
 
 
