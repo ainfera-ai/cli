@@ -20,7 +20,7 @@ ainfera auth login --key ainf_your_api_key
 # Check the platform + your auth in one panel
 ainfera status
 
-# Initialize in your agent repo
+# Initialize in your agent repo (interactive, or pass --non-interactive for CI)
 cd my-agent
 ainfera init --name my-agent --framework langchain --tier standard
 
@@ -94,35 +94,25 @@ ainfera --api-url https://api.staging.ainfera.ai agents list
 
 ## ainfera.yaml
 
-Configuration for your agent lives in `ainfera.yaml` at the repo root:
+Configuration for your agent lives in `ainfera.yaml` at the repo root.
+Run `ainfera init` (interactive) or `ainfera init --non-interactive --name my-agent
+--framework langchain --tier standard` to scaffold one:
 
 ```yaml
-name: research-agent
-framework: langchain
-version: 0.1.0
-
-compute:
-  sandbox: docker
-  memory: 512mb
-  cpu: 1
-  timeout: 300s
-
-trust:
-  anomaly_detection: true
-  quarantine_threshold: 400
-
-billing:
-  model: per_call
-  price_per_call: 0.003
-  creator_share: 0.80
-
-inference:
-  provider: openai
-  model: gpt-4o-mini
-
-kill_switch:
-  enabled: true
-  auto_quarantine: true
+version: "1"
+agent:
+  name: research-agent
+  framework: langchain
+  description: ""
+  compute:
+    tier: standard       # basic | standard | gpu
+    timeout: 30
+  trust:
+    min_score: 50
+    auto_kill_below: 20
+  billing:
+    model: per-call
+    price_per_call: 0.003
 ```
 
 ## Links
