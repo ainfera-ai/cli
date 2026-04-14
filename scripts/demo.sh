@@ -33,10 +33,17 @@ echo ""
 sleep "$PAUSE"
 
 echo "3. Create a new agent..."
-ainfera agents create \
+CREATE_JSON="$(ainfera --json agents create \
   --name "$AGENT_NAME" \
   --framework langchain \
-  --description "Live demo agent created during investor pitch"
+  --description "Live demo agent created during investor pitch")"
+AGENT_ID="$(printf '%s' "$CREATE_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('id', ''))")"
+if [ -z "$AGENT_ID" ]; then
+  echo "  ✗ Could not parse agent id from create response:"
+  echo "  $CREATE_JSON"
+  exit 1
+fi
+echo "  ✓ Created agent: $AGENT_ID"
 echo ""
 sleep "$PAUSE"
 
@@ -55,18 +62,18 @@ cat ainfera.yaml
 echo ""
 sleep "$PAUSE"
 
-echo "5. Deploy agent..."
+echo "5. Deploy agent ($AGENT_ID)..."
 ainfera deploy
 echo ""
 sleep "$PAUSE"
 
-echo "6. Check trust score..."
-ainfera trust score "$AGENT_NAME" || echo "  (trust score pending — new agent)"
+echo "6. Check trust score for $AGENT_ID..."
+ainfera trust score "$AGENT_ID" || echo "  (trust score pending — new agent)"
 echo ""
 sleep "$PAUSE"
 
-echo "7. View agents list with new agent..."
-ainfera agents list
+echo "7. Fetch agent by id to confirm deploy..."
+ainfera agents get "$AGENT_ID"
 echo ""
 
 echo "═══════════════════════════════════════"
