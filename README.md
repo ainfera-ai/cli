@@ -85,7 +85,7 @@ scripting and CI/CD pipelines:
 ```bash
 ainfera --json status                       | jq '.api_version'
 ainfera --json agents list                  | jq '.items[].name'
-ainfera --json trust score <agent-id>       | jq '.overall_score'
+ainfera --json trust <agent-id>             | jq '.score'
 ```
 
 ## Overriding the API URL
@@ -109,16 +109,20 @@ version: "1"
 agent:
   name: research-agent
   framework: langchain
-  description: ""
   compute:
-    tier: standard       # basic | standard | gpu
-    timeout: 30
+    sandbox: docker        # docker | firecracker
+    memory: 512mb
+    cpu: 1
+    timeout: 300s
   trust:
-    min_score: 50
-    auto_kill_below: 20
+    anomaly_detection: true
+    quarantine_threshold: 400
   billing:
-    model: per-call
+    model: per_call        # per_call | per_token | per_minute
     price_per_call: 0.003
+  kill_switch:
+    enabled: true
+    auto_quarantine: true
 ```
 
 ## GitHub Actions
@@ -128,22 +132,25 @@ for CI workflows:
 
 ```yaml
 # Deploy on push to main
-- uses: ainfera-ai/cli/actions/deploy-agent@v0
+- uses: ainfera-ai/cli/actions/deploy-agent@v0.4.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
 
-# Fail PRs whose trust score drops below 700
-- uses: ainfera-ai/cli/actions/trust-check@v0
+# Comment a before/after trust diff on PRs; fail below threshold
+- uses: ainfera-ai/cli/actions/trust-check@v0.4.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
-    min-score: "700"
+    agent-id: ${{ vars.AINFERA_AGENT_ID }}
+    threshold: "800"
 
 # Validate ainfera.yaml in PRs and run your test suite
-- uses: ainfera-ai/cli/actions/sandbox-test@v0
+- uses: ainfera-ai/cli/actions/sandbox-test@v0.4.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
     test-command: pytest -xvs
 ```
+
+See [actions/README.md](actions/README.md) for full docs.
 
 Each action has its own README in `actions/<name>/README.md`.
 

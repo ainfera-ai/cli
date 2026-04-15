@@ -128,6 +128,20 @@ class AinferaClient:
     def get_anomalies(self, agent_id: str) -> dict:
         return self._request("GET", f"/v1/trust/{agent_id}/anomalies")
 
+    def put_trust_baseline(
+        self, agent_id: str, dimensions: dict[str, float] | None = None
+    ) -> dict:
+        """Seed baseline dimension scores for a newly created agent."""
+        payload: dict = {"dimensions": dimensions or {}}
+        return self._request("PUT", f"/v1/trust/{agent_id}", json=payload)
+
+    # ── Kill switch ─────────────────────────────────────────────────────
+
+    def arm_kill_switch(self, agent_id: str, floor: int) -> dict:
+        return self._request(
+            "POST", f"/v1/kill-switch/{agent_id}/arm", json={"floor": floor}
+        )
+
     # ── Billing ─────────────────────────────────────────────────────────
 
     def get_usage(self, agent_id: str) -> dict:

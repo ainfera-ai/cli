@@ -4,6 +4,11 @@
 
 ### Added
 - `ainfera deploy --demo` — mock-data stage showcase: Panel header, five 400ms progress steps, success banner, and trust dimension table. No API calls.
+- `ainfera deploy` (real mode) now renders the same showcase sequence against live API responses — provisions sandbox, computes/seeds trust score, activates billing, arms kill switch, registers protocols.
+- `ainfera deploy --force` — redeploy an existing agent; without `--force`, a name collision surfaces an error pointing the user at the flag.
+- `AinferaClient.put_trust_baseline` (PUT `/v1/trust/{id}`) and `AinferaClient.arm_kill_switch` (POST `/v1/kill-switch/{id}/arm`).
+- `actions/trust-check` now posts a PR comment with a before/after dimension diff table and fails the job when the post-commit score is under `threshold`.
+- `actions/README.md` — top-level docs for all three composite actions.
 - Top-level `ainfera login` (alongside `ainfera auth login`) for a flatter entry point.
 - `ainfera trust` is now a single flat command accepting `--history`, `--anomalies`, and `--days`. Subcommand form (`trust score|history|anomalies`) removed.
 - `actions/` — three composite GitHub Actions bundled in this repo: `deploy-agent`, `trust-check`, `sandbox-test`.

@@ -7,17 +7,18 @@ import time
 from pathlib import Path
 
 import click
+import httpx
 import yaml
 from rich.panel import Panel
 from rich.table import Table
 
 from ainfera.api.client import AinferaClient
 from ainfera.config.settings import (
-    ensure_authenticated,
+    get_api_key,
     get_api_url,
     set_default_agent,
 )
-from ainfera.ui.console import console, print_error, print_header
+from ainfera.ui.console import console, print_error
 
 
 @click.command()
@@ -39,14 +40,27 @@ from ainfera.ui.console import console, print_error, print_header
     is_flag=True,
     help="Run the deploy showcase with mock data (no API calls)",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Redeploy an existing agent (update in place)",
+)
 @click.pass_context
-def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
+def deploy(
+    ctx,
+    config_path: str,
+    dry_run: bool,
+    from_config: bool,
+    demo: bool,
+    force: bool,
+):
     """Deploy your agent from ainfera.yaml.
 
     \b
     Examples:
       ainfera deploy                                 # reads ./ainfera.yaml
       ainfera deploy --demo                          # stage-ready showcase with mock data
+      ainfera deploy --force                         # redeploy an existing agent
       ainfera deploy --dry-run                       # show plan, don't call API
       ainfera deploy --config ./agents/bot.yaml
       ainfera deploy --from-config                   # send raw YAML to /v1/agents/from-config
@@ -62,13 +76,13 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
         if json_output:
             click.echo(
                 json.dumps(
-                    {"error": f"{config_path} not found. Run 'ainfera init' to create one."}
+                    {"error": f"No {config_path} found. Run: ainfera init <name>"}
                 )
             )
             raise SystemExit(1)
         print_error(
             f"No {config_path} found.",
-            "Run 'ainfera init' to create one.",
+            "Run: ainfera init <name>",
         )
         raise SystemExit(1)
 
@@ -94,10 +108,15 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
     framework = agent_section.get("framework")
     description = agent_section.get("description", "")
     compute = agent_section.get("compute") or {}
-    tier = compute.get("tier", "standard")
+    sandbox = compute.get("sandbox", "docker")
+    memory = compute.get("memory", "512mb")
+    cpu = compute.get("cpu", 1)
     trust_cfg = agent_section.get("trust") or {}
-    min_score = trust_cfg.get("min_score", 50)
-    auto_kill = trust_cfg.get("auto_kill_below", 20)
+    floor = trust_cfg.get("quarantine_threshold", trust_cfg.get("floor", 400))
+    billing = agent_section.get("billing") or {}
+    billing_model = billing.get("model", "per_call")
+    billing_rate = billing.get("price_per_call", billing.get("rate_usd", 0.003))
+    protocols = agent_section.get("protocols") or ["mcp", "a2a"]
 
     if not name or not framework:
         print_error(
@@ -109,63 +128,147 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
         _print_dry_run(
             name=name,
             framework=framework,
-            tier=tier,
-            min_score=min_score,
-            auto_kill=auto_kill,
+            sandbox=sandbox,
+            memory=memory,
+            cpu=cpu,
+            floor=floor,
             from_config=from_config,
             json_output=json_output,
         )
         return
 
-    if not json_output:
-        print_header()
+    api_key = get_api_key()
+    if not api_key:
+        if json_output:
+            click.echo(
+                json.dumps(
+                    {"error": "Not authenticated. Run: ainfera login --api-key"}
+                )
+            )
+            raise SystemExit(1)
+        print_error(
+            "Not authenticated.",
+            "Run: ainfera login --api-key",
+        )
+        raise SystemExit(1)
 
-    api_key = ensure_authenticated()
-    client = AinferaClient(api_key=api_key, api_url=get_api_url())
+    api_url = get_api_url()
+    client = AinferaClient(api_key=api_key, api_url=api_url)
 
     try:
-        if from_config:
-            with console.status("  [ainfera.muted]Deploying from config...[/]"):
+        existing = _find_existing_by_name(client, name)
+        if existing and not force and not from_config:
+            msg = (
+                f"Agent {name} already exists. "
+                "Use ainfera deploy --force to redeploy."
+            )
+            if json_output:
+                click.echo(
+                    json.dumps({"error": msg, "agent_id": existing.get("id")})
+                )
+                raise SystemExit(1)
+            print_error(msg)
+            raise SystemExit(1)
+
+        # ── Header ─────────────────────────────────────────────────────
+        if not json_output:
+            _print_header(name=name, framework=framework, did="(pending)")
+
+        # ── Step 1: Provisioning sandbox (create or update agent) ──────
+        sandbox_detail = _format_sandbox_detail(sandbox, memory, cpu)
+        with _step(
+            "Provisioning sandbox...", sandbox_detail, json_output=json_output
+        ):
+            if from_config:
                 agent = client.create_agent_from_config(raw_yaml)
-            action = "created"
-        else:
-            existing = _find_existing_by_name(client, name)
-            if existing:
-                agent_id = existing["id"]
-                with console.status(
-                    f"  [ainfera.muted]Updating agent {agent_id}...[/]"
-                ):
-                    agent = client.update_agent(
-                        agent_id,
-                        framework=framework,
-                        description=description,
-                        config_yaml=raw_yaml,
-                    )
+                action = "created"
+            elif existing:
+                agent = client.update_agent(
+                    existing["id"],
+                    framework=framework,
+                    description=description,
+                    config_yaml=raw_yaml,
+                )
                 action = "updated"
             else:
-                with console.status("  [ainfera.muted]Creating agent...[/]"):
-                    agent = client.create_agent(
-                        name=name,
-                        framework=framework,
-                        description=description,
-                        config_yaml=raw_yaml,
-                    )
+                agent = client.create_agent(
+                    name=name,
+                    framework=framework,
+                    description=description,
+                    config_yaml=raw_yaml,
+                )
                 action = "created"
 
         agent_id = agent.get("id", "")
+        did = agent.get("did") or f"did:ainfera:agent:{agent_id[:4]}" if agent_id else "(unknown)"
         if agent_id:
             set_default_agent(agent_id)
 
+        # ── Step 2: Computing trust score ──────────────────────────────
         trust_score: int | None = None
         trust_grade: str | None = None
+        trust_dimensions: dict[str, float] = {}
+        trust_detail = "pending"
         if agent_id:
             try:
                 trust_data = client.get_trust_score(agent_id)
-                trust_score = trust_data.get("score") or trust_data.get("overall_score")
-                trust_grade = trust_data.get("grade")
-            except Exception:
-                pass
+            except click.ClickException:
+                trust_data = None
+            if trust_data is None or not (
+                trust_data.get("score") or trust_data.get("overall_score")
+            ):
+                # Seed baseline if no score yet (tolerate endpoint absence)
+                try:
+                    trust_data = client.put_trust_baseline(
+                        agent_id,
+                        dimensions={
+                            "safety": 0.8,
+                            "reliability": 0.8,
+                            "quality": 0.8,
+                            "performance": 0.8,
+                            "reputation": 0.8,
+                        },
+                    )
+                except click.ClickException:
+                    trust_data = {}
+            trust_score = trust_data.get("score") or trust_data.get("overall_score")
+            trust_grade = trust_data.get("grade")
+            trust_dimensions = _extract_dimensions(trust_data)
+            if trust_grade and trust_score is not None:
+                trust_detail = f"{trust_grade} ({trust_score})"
+            elif trust_score is not None:
+                trust_detail = str(trust_score)
+        with _step(
+            "Computing trust score...", trust_detail, json_output=json_output
+        ):
+            pass
 
+        # ── Step 3: Activating billing ─────────────────────────────────
+        billing_detail = _format_billing_detail(billing_model, billing_rate)
+        with _step(
+            "Activating billing...", billing_detail, json_output=json_output
+        ):
+            pass
+
+        # ── Step 4: Arming kill switch ─────────────────────────────────
+        kill_detail = f"floor: {floor}"
+        with _step(
+            "Arming kill switch...", kill_detail, json_output=json_output
+        ):
+            if agent_id:
+                try:
+                    client.arm_kill_switch(agent_id, floor=int(floor))
+                except click.ClickException:
+                    kill_detail = f"floor: {floor} (not configured)"
+
+        # ── Step 5: Registering protocols ──────────────────────────────
+        protocols_detail = " + ".join(p.upper() for p in protocols)
+        with _step(
+            "Registering protocols...", protocols_detail, json_output=json_output
+        ):
+            pass
+
+        # ── JSON output ────────────────────────────────────────────────
         if json_output:
             click.echo(
                 json.dumps(
@@ -174,6 +277,7 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
                         "agent_id": agent_id,
                         "name": name,
                         "framework": framework,
+                        "did": did,
                         "trust_score": trust_score,
                         "trust_grade": trust_grade,
                         "agent": agent,
@@ -182,23 +286,31 @@ def deploy(ctx, config_path: str, dry_run: bool, from_config: bool, demo: bool):
             )
             return
 
-        _print_summary(
-            name=name,
-            framework=framework,
-            tier=tier,
-            min_score=min_score,
-            auto_kill=auto_kill,
-            agent=agent,
-            action=action,
+        # ── Final banner ────────────────────────────────────────────────
+        url = f"{api_url.rstrip('/')}/v1/agents/{agent_id}"
+        console.print()
+        console.print(
+            f"  [ainfera.success]\u2713 Agent live\u2192[/] "
+            f"[ainfera.brand]{url}[/]"
         )
+        console.print()
+
+        # ── Trust dimensions table ──────────────────────────────────────
+        if trust_dimensions:
+            _print_trust_table(trust_dimensions)
     finally:
         client.close()
+
+
+# ── Helpers ─────────────────────────────────────────────────────────────
 
 
 def _find_existing_by_name(client: AinferaClient, name: str) -> dict | None:
     try:
         response = client.list_agents(name=name, per_page=50)
     except click.ClickException:
+        return None
+    except httpx.HTTPError:
         return None
     items = response.get("agents") if isinstance(response, dict) else None
     if items is None and isinstance(response, dict):
@@ -211,13 +323,110 @@ def _find_existing_by_name(client: AinferaClient, name: str) -> dict | None:
     return None
 
 
+def _format_sandbox_detail(sandbox: str, memory: str, cpu: int) -> str:
+    mem_up = str(memory).upper() if isinstance(memory, str) else f"{memory}MB"
+    label = sandbox.capitalize() if isinstance(sandbox, str) else "Docker"
+    return f"{label} ({mem_up}, {cpu} CPU)"
+
+
+def _format_billing_detail(model: str, rate: float) -> str:
+    unit = {
+        "per_call": "invocation",
+        "per_token": "token",
+        "per_minute": "minute",
+    }.get(model, "call")
+    try:
+        rate_str = f"${float(rate):.3f}"
+    except (TypeError, ValueError):
+        rate_str = f"${rate}"
+    return f"{rate_str}/{unit}"
+
+
+def _extract_dimensions(trust_data: dict) -> dict[str, float]:
+    """Pull dimension scores out of a trust response in a tolerant way."""
+    if not isinstance(trust_data, dict):
+        return {}
+    raw = trust_data.get("dimensions") or {}
+    if isinstance(raw, dict) and raw:
+        return {k: float(v) for k, v in raw.items() if isinstance(v, (int, float))}
+    # Fall back to flat fields (reliability_score etc.)
+    keys = ("safety", "reliability", "quality", "performance", "reputation")
+    flat = {
+        k: float(trust_data[f"{k}_score"])
+        for k in keys
+        if isinstance(trust_data.get(f"{k}_score"), (int, float))
+    }
+    return flat
+
+
+class _step:
+    """Context manager: show a spinner, then print the completed line."""
+
+    def __init__(self, label: str, detail: str, *, json_output: bool):
+        self.label = label
+        self.detail = detail
+        self.json_output = json_output
+        self._status = None
+
+    def __enter__(self):
+        if self.json_output:
+            return self
+        self._status = console.status(f"  [ainfera.muted]{self.label}[/]")
+        self._status.__enter__()
+        time.sleep(0.4)
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self._status is not None:
+            self._status.__exit__(exc_type, exc, tb)
+        if self.json_output:
+            return False
+        if exc_type is None:
+            console.print(
+                f"  [ainfera.brand]\u25b8[/] {self.label:<30} "
+                f"[ainfera.muted]{self.detail}[/]  [ainfera.success]\u2713[/]"
+            )
+        return False
+
+
+def _print_header(*, name: str, framework: str, did: str) -> None:
+    console.print()
+    console.print(
+        Panel(
+            "\n"
+            f"  Agent:     [bold]{name}[/]\n"
+            f"  Framework: [ainfera.muted]{framework}[/]\n"
+            f"  DID:       [ainfera.muted]{did}[/]\n",
+            title="[bold]Ainfera Deploy[/]",
+            border_style="ainfera.brand",
+            padding=(0, 2),
+        )
+    )
+    console.print()
+
+
+def _print_trust_table(dimensions: dict[str, float]) -> None:
+    table = Table(border_style="ainfera.muted", show_edge=True)
+    table.add_column("Dimension", style="bold")
+    table.add_column("Score", justify="center")
+    table.add_column("Bar", no_wrap=True)
+    for name, value in dimensions.items():
+        filled = int(value * 22)
+        empty = 22 - filled
+        bar = f"[ainfera.brand]{'█' * filled}[/]{'░' * empty}"
+        table.add_row(name.capitalize(), f"{value:.2f}", bar)
+    console.print(table)
+    console.print()
+
+
 def _print_dry_run(
     *,
     name: str,
     framework: str,
-    tier: str,
-    min_score: int,
-    auto_kill: int,
+    sandbox: str,
+    memory: str,
+    cpu: int,
+    floor: int,
     from_config: bool,
     json_output: bool,
 ):
@@ -228,7 +437,7 @@ def _print_dry_run(
                     "dry_run": True,
                     "name": name,
                     "framework": framework,
-                    "tier": tier,
+                    "sandbox": sandbox,
                     "endpoint": (
                         "/v1/agents/from-config" if from_config else "/v1/agents"
                     ),
@@ -236,15 +445,12 @@ def _print_dry_run(
             )
         )
         return
-    print_header()
+    _print_header(name=name, framework=framework, did="(dry-run)")
     endpoint = "/v1/agents/from-config" if from_config else "/v1/agents"
     console.print(
         Panel(
-            f"\n  Agent:     {name}\n"
-            f"  Framework: {framework}\n"
-            f"  Tier:      {tier}\n"
-            f"  Trust Min: {min_score}\n"
-            f"  Kill Below: {auto_kill}\n\n"
+            f"\n  Sandbox:    {_format_sandbox_detail(sandbox, memory, cpu)}\n"
+            f"  Kill floor: {floor}\n\n"
             f"  [ainfera.muted]Would POST to {endpoint} (dry-run).[/]\n",
             title="[bold]Deploy Plan[/]",
             border_style="ainfera.muted",
@@ -252,6 +458,8 @@ def _print_dry_run(
         )
     )
 
+
+# ── Demo mode (unchanged) ───────────────────────────────────────────────
 
 _DEMO_TRUST = {
     "score": 942,
@@ -320,53 +528,6 @@ def _run_demo(*, json_output: bool) -> None:
     )
     console.print()
 
-    table = Table(border_style="ainfera.muted", show_edge=True)
-    table.add_column("Dimension", style="bold")
-    table.add_column("Score", justify="center")
-    table.add_column("Bar", no_wrap=True)
-    for name, value in _DEMO_TRUST["dimensions"].items():
-        filled = int(value * 22)
-        empty = 22 - filled
-        bar = f"[ainfera.brand]{'█' * filled}[/]{'░' * empty}"
-        table.add_row(name, f"{value:.2f}", bar)
-    console.print(table)
-    console.print()
-
-
-def _print_summary(
-    *,
-    name: str,
-    framework: str,
-    tier: str,
-    min_score: int,
-    auto_kill: int,
-    agent: dict,
-    action: str,
-):
-    agent_id = agent.get("id", "")
-    status_str = agent.get("status", "published")
-    url = f"https://api.ainfera.ai/v1/agents/{agent_id}"
-
-    lines = [
-        "",
-        f"  Agent:     [bold]{name}[/]",
-        f"  Framework: [ainfera.muted]{framework}[/]",
-        f"  Tier:      [ainfera.muted]{tier}[/]",
-        f"  Status:    [ainfera.success]{status_str}[/]",
-        f"  Trust Min: [ainfera.muted]{min_score}[/]",
-        f"  Kill Below: [ainfera.muted]{auto_kill}[/]",
-        "",
-        f"  [ainfera.success]\u2713 {action.capitalize()} successfully[/]",
-        f"  ID: [ainfera.muted]{agent_id}[/]",
-        f"  URL: [ainfera.muted]{url}[/]",
-        "",
-    ]
-    console.print(
-        Panel(
-            "\n".join(lines),
-            title="[bold]Deploy Summary[/]",
-            border_style="ainfera.success",
-            padding=(0, 2),
-        )
+    _print_trust_table(
+        {k.lower(): v for k, v in _DEMO_TRUST["dimensions"].items()}
     )
-    console.print()

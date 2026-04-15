@@ -51,7 +51,7 @@ def test_deploy_reads_config(tmp_path):
 
     with (
         patch("ainfera.commands.deploy.AinferaClient", return_value=mock_client),
-        patch("ainfera.commands.deploy.ensure_authenticated", return_value="ainf_test"),
+        patch("ainfera.commands.deploy.get_api_key", return_value="ainf_test"),
         patch("ainfera.commands.deploy.set_default_agent"),
     ):
         result = runner.invoke(main, ["deploy"])
@@ -81,7 +81,7 @@ def test_deploy_json_output(tmp_path):
 
     with (
         patch("ainfera.commands.deploy.AinferaClient", return_value=mock_client),
-        patch("ainfera.commands.deploy.ensure_authenticated", return_value="ainf_test"),
+        patch("ainfera.commands.deploy.get_api_key", return_value="ainf_test"),
         patch("ainfera.commands.deploy.set_default_agent"),
     ):
         result = runner.invoke(main, ["--json", "deploy"])

@@ -16,7 +16,7 @@ inputs:
   test-command:
     description: Test command to run after the dry-run succeeds.
     required: false
-    default: ""
+    default: "pytest"
   api-url:
     description: Override the Ainfera API URL.
     required: false
