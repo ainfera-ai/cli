@@ -1,5 +1,5 @@
 name: Ainfera Sandbox Test
-description: Run ainfera deploy --dry-run and an optional test command in CI.
+description: Validate ainfera.yaml with a dry-run deploy and run your test command in CI.
 author: Ainfera Technologies
 branding:
   icon: check-circle

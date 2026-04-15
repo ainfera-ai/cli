@@ -1,9 +1,12 @@
 # ainfera
 
-The CLI for the [Ainfera](https://ainfera.ai) AI agent infrastructure platform.
+The CLI for [Ainfera](https://ainfera.ai) — trust scoring and agent discovery
+for the AI agent economy.
 
-Deploy AI agents with trust scores, kill switches, and metered billing.
-One command.
+Connect your GitHub repo. Get a trust score. Get discovered.
+
+Trust evaluation is powered by **NVIDIA NeMo Guardrails** (safety) and
+**NVIDIA NIM** inference (reliability, quality, performance, reputation).
 
 ## Install
 
@@ -57,6 +60,7 @@ network calls.
 | `ainfera deploy` | Deploy from `ainfera.yaml` (add `--demo` for the showcase) |
 | `ainfera agents list/get/create/delete` | Manage agents |
 | `ainfera trust [--history\|--anomalies]` | Trust score views |
+| `ainfera trust-check --agent-id ID --threshold N` | CI/CD gate — exits non-zero below threshold |
 | `ainfera billing` | Usage and cost breakdown |
 | `ainfera kill` | Trigger or clear kill switch |
 | `ainfera logs` | View or stream execution logs |
@@ -124,6 +128,19 @@ agent:
     enabled: true
     auto_quarantine: true
 ```
+
+## Trust check (CI/CD gate)
+
+Run locally or from CI to block merges when an agent's trust score drops below a
+threshold:
+
+```bash
+ainfera trust-check --agent-id AGENT_ID --threshold 800
+ainfera trust-check --agent-id AGENT_ID --threshold 800 --format json
+```
+
+With `--format json` the output includes a `comment_markdown` field suitable for
+posting as a PR comment from a GitHub Action.
 
 ## GitHub Actions
 

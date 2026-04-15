@@ -1,5 +1,5 @@
 name: Ainfera Deploy Agent
-description: Deploy an agent to the Ainfera platform using ainfera.yaml.
+description: Deploy an agent to the Ainfera platform using ainfera.yaml. Runs trust evaluation (NVIDIA NeMo Guardrails + NIM) and publishes to the discovery marketplace.
 author: Ainfera Technologies
 branding:
   icon: upload-cloud

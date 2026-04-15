@@ -16,6 +16,7 @@ from ainfera.commands.login import login
 from ainfera.commands.logs import logs
 from ainfera.commands.status import status
 from ainfera.commands.trust import trust
+from ainfera.commands.trust_check import trust_check
 
 
 @click.group()
@@ -47,6 +48,7 @@ def main(ctx, json_output: bool, api_url: str | None, verbose: bool):
 main.add_command(auth)
 main.add_command(agents)
 main.add_command(trust)
+main.add_command(trust_check)
 main.add_command(health)
 main.add_command(init)
 main.add_command(deploy)

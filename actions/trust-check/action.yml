@@ -1,5 +1,5 @@
 name: Ainfera Trust Check
-description: Compare an agent's trust score before/after a commit and post the diff as a PR comment.
+description: Evaluate an agent's trust score as a PR check. Powered by NVIDIA NeMo Guardrails safety evaluation and NVIDIA NIM inference.
 author: Ainfera Technologies
 branding:
   icon: shield

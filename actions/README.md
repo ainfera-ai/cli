@@ -1,8 +1,12 @@
 # Ainfera GitHub Actions
 
-Three composite actions you can drop into any workflow. All of them install the
+Trust-gate your agent CI/CD pipeline. Three composite actions you can drop into
+any workflow. All of them install the
 [`ainfera`](https://pypi.org/project/ainfera/) CLI on the runner and call the
 Ainfera platform API.
+
+Trust evaluation is powered by **NVIDIA NeMo Guardrails** (safety dimension) and
+**NVIDIA NIM** inference (reliability, quality, performance, reputation).
 
 ```
 actions/

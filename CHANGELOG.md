@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 (2026-04-15)
+
+### Added
+- `ainfera trust-check` — CI/CD gate command. Fetches the current trust score, renders a radar breakdown with per-dimension attribution, and exits non-zero when `--threshold` is set and the score falls below it. Supports `--format json` for GitHub Actions integration; the JSON payload includes a `comment_markdown` field ready to post as a PR comment.
+- Deploy trust table now attributes each dimension to its backing NVIDIA service — safety via **NVIDIA NeMo Guardrails**, the remaining dimensions via **NVIDIA NIM** inference.
+
+### Changed
+- `ainfera deploy` final success line now links to the discovery marketplace (`https://ainfera.ai/marketplace/<name>`) instead of the raw API resource URL.
+- Positioning: Ainfera is the unified infrastructure for the AI agent economy, delivered through two wedges — **trust scoring** and **agent discovery**. Copy across README, CHANGELOG, and GitHub Action descriptions refreshed to match.
+- `actions/trust-check` description now reflects the NVIDIA-powered evaluation pipeline.
+
 ## 0.4.0 (2026-04-14)
 
 ### Added

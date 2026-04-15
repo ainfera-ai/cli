@@ -287,11 +287,11 @@ def deploy(
             return
 
         # ── Final banner ────────────────────────────────────────────────
-        url = f"{api_url.rstrip('/')}/v1/agents/{agent_id}"
+        marketplace_url = f"https://ainfera.ai/marketplace/{name}"
         console.print()
         console.print(
-            f"  [ainfera.success]\u2713 Agent live\u2192[/] "
-            f"[ainfera.brand]{url}[/]"
+            f"  [ainfera.success]\u2713 Published to marketplace\u2192[/] "
+            f"[ainfera.brand]{marketplace_url}[/]"
         )
         console.print()
 
@@ -410,11 +410,17 @@ def _print_trust_table(dimensions: dict[str, float]) -> None:
     table.add_column("Dimension", style="bold")
     table.add_column("Score", justify="center")
     table.add_column("Bar", no_wrap=True)
+    table.add_column("Source", style="ainfera.muted")
     for name, value in dimensions.items():
         filled = int(value * 22)
         empty = 22 - filled
         bar = f"[ainfera.brand]{'█' * filled}[/]{'░' * empty}"
-        table.add_row(name.capitalize(), f"{value:.2f}", bar)
+        source = (
+            "NVIDIA NeMo Guardrails"
+            if name.lower() == "safety"
+            else "NVIDIA NIM"
+        )
+        table.add_row(name.capitalize(), f"{value:.2f}", bar, source)
     console.print(table)
     console.print()
 
@@ -523,8 +529,8 @@ def _run_demo(*, json_output: bool) -> None:
 
     console.print()
     console.print(
-        "  [ainfera.success]\u2713 Agent live\u2192[/] "
-        "[ainfera.brand]https://api.ainfera.ai/agent/a7f3[/]"
+        "  [ainfera.success]\u2713 Published to marketplace\u2192[/] "
+        "[ainfera.brand]https://ainfera.ai/marketplace/my-agent[/]"
     )
     console.print()
 
