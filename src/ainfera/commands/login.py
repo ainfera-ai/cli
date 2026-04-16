@@ -45,7 +45,7 @@ def login(ctx, key: str | None, api_url: str | None):
             raise SystemExit(1)
         print_error(
             "Invalid API key format. Keys start with [bold]ainf_[/bold].",
-            "Get your API key at https://console.ainfera.ai/settings/api-keys",
+            "Get your API key at https://app.ainfera.ai/settings/api-keys",
         )
         raise SystemExit(1)
 
@@ -63,7 +63,7 @@ def login(ctx, key: str | None, api_url: str | None):
             raise SystemExit(1)
         print_error(
             "Could not verify API key.",
-            "Check your key and try again, or visit https://console.ainfera.ai",
+            "Check your key and try again, or visit https://app.ainfera.ai",
         )
         raise SystemExit(1)
     finally:

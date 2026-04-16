@@ -18,7 +18,7 @@ actions/
 ## Prerequisites
 
 Add your Ainfera API key as a repository secret named `AINFERA_API_KEY`.
-Get a key at <https://console.ainfera.ai/settings/api-keys>.
+Get a key at <https://app.ainfera.ai/settings/api-keys>.
 
 ---
 

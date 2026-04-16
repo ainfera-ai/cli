@@ -18,7 +18,7 @@ from ainfera.ui.console import console
 @click.option(
     "--framework",
     default=None,
-    help="Filter by framework (openclaw, langchain, crewai, autogen).",
+    help="Filter by framework (langchain, crewai, openclaw).",
 )
 @click.option("--channel", default=None, help="Filter by channel (telegram, slack, discord, whatsapp).")
 @click.pass_context

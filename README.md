@@ -1,12 +1,46 @@
 # ainfera
 
-The CLI for [Ainfera](https://ainfera.ai) — trust scoring and agent discovery
-for the AI agent economy.
+<p align="center">
+  <strong>CLI for Ainfera</strong> — trust scoring and agent discovery for the AI agent economy.<br/>
+  <code>pip install ainfera</code>
+</p>
 
-Connect your GitHub repo. Get a trust score. Get discovered.
+<p align="center">
+  <a href="https://pypi.org/project/ainfera/"><img src="https://img.shields.io/pypi/v/ainfera.svg?color=2878B5&label=PyPI" alt="PyPI"></a>
+  <a href="https://pypi.org/project/ainfera/"><img src="https://img.shields.io/pypi/pyversions/ainfera.svg" alt="Python versions"></a>
+  <a href="https://github.com/ainfera-ai/cli/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/ainfera.svg?color=5B8C6A" alt="License"></a>
+  <a href="https://github.com/ainfera-ai/cli/actions/workflows/ci.yml"><img src="https://github.com/ainfera-ai/cli/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://ainfera.ai"><img src="https://img.shields.io/badge/platform-ainfera.ai-F7F5F0" alt="ainfera.ai"></a>
+</p>
 
-Trust evaluation is powered by **NVIDIA NeMo Guardrails** (safety) and
-**NVIDIA NIM** inference (reliability, quality, performance, reputation).
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#github-actions">GitHub Actions</a> ·
+  <a href="https://api.ainfera.ai/docs">API reference</a>
+</p>
+
+---
+
+## What is Ainfera?
+
+Ainfera is the infrastructure layer for the AI agent economy. Five integrated
+layers — trust scoring, discovery, sandboxed compute, metered billing, and
+orchestration — wired together by one SDK that works with every major agent framework.
+
+This CLI is how developers interact with the Ainfera platform from the terminal.
+
+**Powered by NVIDIA NeMo Guardrails** (safety scoring) and **NVIDIA NIM** inference
+(reliability, quality, performance, reputation).
+
+## Who is this for?
+
+- **Agent authors** who want a trust score on every build and a spot in the Ainfera marketplace
+- **Platform teams** integrating a trust gate into their CI/CD pipeline before shipping agents to production
+- **Researchers** benchmarking agent behavior across frameworks with standardized telemetry
+
+---
 
 ## Install
 
@@ -135,7 +169,8 @@ agent:
 
 ## Trust + Discovery for AI Agents
 
-Works with OpenClaw, LangChain, CrewAI, AutoGen, and any agent framework.
+Native support for LangChain, CrewAI, and OpenClaw. Works with any agent
+framework via the trust callback pattern.
 
 ### Scan skills before installing
 
@@ -185,19 +220,19 @@ for CI workflows:
 
 ```yaml
 # Deploy on push to main
-- uses: ainfera-ai/cli/actions/deploy-agent@v0.4.0
+- uses: ainfera-ai/cli/actions/deploy-agent@v0.6.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
 
 # Comment a before/after trust diff on PRs; fail below threshold
-- uses: ainfera-ai/cli/actions/trust-check@v0.4.0
+- uses: ainfera-ai/cli/actions/trust-check@v0.6.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
     agent-id: ${{ vars.AINFERA_AGENT_ID }}
     threshold: "800"
 
 # Validate ainfera.yaml in PRs and run your test suite
-- uses: ainfera-ai/cli/actions/sandbox-test@v0.4.0
+- uses: ainfera-ai/cli/actions/sandbox-test@v0.6.0
   with:
     api-key: ${{ secrets.AINFERA_API_KEY }}
     test-command: pytest -xvs
@@ -222,13 +257,47 @@ with AinferaSDK(api_key="ainf_...") as sdk:
     print(trust["score"], trust["grade"])
 ```
 
+## Seed-stage integration scope
+
+Native framework support at seed:
+
+| Category | Partners |
+|---|---|
+| Compute & Inference | NVIDIA (NIM, Guardrails) |
+| Model Providers | Anthropic (Claude, MCP), OpenAI (GPT), Hugging Face |
+| Agent Frameworks | LangChain (+LangGraph), CrewAI, OpenClaw |
+| Settlement | Stripe Connect |
+
+**Coming Q4 2026:** Microsoft (Azure OpenAI, AutoGen, Semantic Kernel), Google (Gemini, ADK, A2A v1.0), AWS Bedrock, Mistral, Ollama, LlamaIndex.
+
+## Revenue split
+
+Every agent invocation on Ainfera settles automatically three ways:
+
+| Share | Recipient |
+|---|---|
+| 85% | Creator (agent author) |
+| 5% | Ainfera (platform fee) |
+| 10% | Compute provider |
+
+Settled via Stripe Connect. KYC absorbed, 46+ countries, no money-transmitter registration needed.
+
+Check earnings with `ainfera billing`.
+
 ## Links
 
-- [Documentation](https://docs.ainfera.ai)
-- [Console](https://console.ainfera.ai)
+- [Documentation](https://api.ainfera.ai/docs)
+- [Console](https://app.ainfera.ai)
 - [API Reference](https://api.ainfera.ai/docs)
 - [GitHub](https://github.com/ainfera-ai)
+- [Marketplace](https://ainfera.ai/marketplace)
 
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Built by <a href="https://ainfera.ai">Ainfera</a> · Powered by NVIDIA NIM and NeMo Guardrails
+</p>

@@ -1,6 +1,6 @@
 [project]
 name = "ainfera"
-version = "0.6.0"
+version = "0.6.1"
 description = "CLI for the Ainfera AI agent infrastructure platform"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -33,9 +33,10 @@ ainfera = "ainfera.cli:main"
 
 [project.urls]
 Homepage = "https://ainfera.ai"
-Documentation = "https://docs.ainfera.ai"
+Documentation = "https://api.ainfera.ai/docs"
 Repository = "https://github.com/ainfera-ai/cli"
 Changelog = "https://github.com/ainfera-ai/cli/blob/main/CHANGELOG.md"
+Marketplace = "https://ainfera.ai/marketplace"
 
 [build-system]
 requires = ["hatchling"]

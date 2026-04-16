@@ -17,11 +17,13 @@ from ainfera.utils.detect import detect_framework
 _FRAMEWORKS = [
     ("langchain", "LangChain"),
     ("crewai", "CrewAI"),
-    ("openai_sdk", "OpenAI SDK"),
-    ("autogen", "AutoGen"),
-    ("adk", "ADK"),
+    ("openclaw", "OpenClaw"),
     ("custom", "Custom"),
 ]
+
+# Q4 2026: add ("autogen", "AutoGen"), ("llamaindex", "LlamaIndex"),
+# ("google-adk", "Google ADK"), ("semantic-kernel", "Semantic Kernel"),
+# ("haystack", "Haystack")
 
 _TIERS = ["basic", "standard", "gpu"]
 

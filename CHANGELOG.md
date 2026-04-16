@@ -1,93 +1,71 @@
 # Changelog
 
-## 0.5.0 (2026-04-15)
+All notable changes to the `ainfera` CLI are documented here.
 
-### Added
-- `ainfera trust-check` — CI/CD gate command. Fetches the current trust score, renders a radar breakdown with per-dimension attribution, and exits non-zero when `--threshold` is set and the score falls below it. Supports `--format json` for GitHub Actions integration; the JSON payload includes a `comment_markdown` field ready to post as a PR comment.
-- Deploy trust table now attributes each dimension to its backing NVIDIA service — safety via **NVIDIA NeMo Guardrails**, the remaining dimensions via **NVIDIA NIM** inference.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Changed
-- `ainfera deploy` final success line now links to the discovery marketplace (`https://ainfera.ai/marketplace/<name>`) instead of the raw API resource URL.
-- Positioning: Ainfera is the unified infrastructure for the AI agent economy, delivered through two wedges — **trust scoring** and **agent discovery**. Copy across README, CHANGELOG, and GitHub Action descriptions refreshed to match.
-- `actions/trust-check` description now reflects the NVIDIA-powered evaluation pipeline.
-
-## 0.4.0 (2026-04-14)
-
-### Added
-- `ainfera deploy --demo` — mock-data stage showcase: Panel header, five 400ms progress steps, success banner, and trust dimension table. No API calls.
-- `ainfera deploy` (real mode) now renders the same showcase sequence against live API responses — provisions sandbox, computes/seeds trust score, activates billing, arms kill switch, registers protocols.
-- `ainfera deploy --force` — redeploy an existing agent; without `--force`, a name collision surfaces an error pointing the user at the flag.
-- `AinferaClient.put_trust_baseline` (PUT `/v1/trust/{id}`) and `AinferaClient.arm_kill_switch` (POST `/v1/kill-switch/{id}/arm`).
-- `actions/trust-check` now posts a PR comment with a before/after dimension diff table and fails the job when the post-commit score is under `threshold`.
-- `actions/README.md` — top-level docs for all three composite actions.
-- Top-level `ainfera login` (alongside `ainfera auth login`) for a flatter entry point.
-- `ainfera trust` is now a single flat command accepting `--history`, `--anomalies`, and `--days`. Subcommand form (`trust score|history|anomalies`) removed.
-- `actions/` — three composite GitHub Actions bundled in this repo: `deploy-agent`, `trust-check`, `sandbox-test`.
-- `src/ainfera/sdk/` — typed synchronous SDK (`AinferaSDK`) for programmatic access. Ships in the same `ainfera` package.
-- `python -m ainfera` now works (added `__main__.py`).
+## [0.6.1] — 2026-04-17
 
 ### Changed
-- `ainfera deploy` JSON output now includes `agent_id`, `name`, `framework`, `trust_score`, and `trust_grade` at the top level for easier scripting (the full `agent` object is still nested).
-- `ainfera init` auto-detects framework from `requirements.txt` / `package.json` when run non-interactively (e.g. CI, `--json`, piped stdin) and now emits JSON under a nested `config` key.
-- `generate_yaml()` / `parse_yaml()` now wrap config under `agent:` to match the schema `ainfera deploy` expects end-to-end.
+- Align framework support documentation to canonical seed-stage set (LangChain, CrewAI, OpenClaw)
+- Update homepage and repository URLs to `ainfera.ai` apex (DNS cutover Apr 17)
+- Reference `app.ainfera.ai` for logged-in console surfaces
+- README hero rework — badges, Who-is-this-for section, seed integration table
+
+### Added
+- `CHANGELOG.md` with full release history
+- GitHub Actions CI workflow (ruff + pytest across Python 3.10/3.11/3.12)
+- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`
+- Issue templates + PR template under `.github/`
+
+## [0.6.0] — 2026-04-16
+
+### Added
+- `ainfera skill-scan` command — scan OpenClaw SKILL.md files for trust before installing
+- `ainfera register` command — publish agent to the Ainfera marketplace
+- `ainfera discover` command — search marketplace for trusted agents
+- `ainfera gate` command — auto-block skill installs below a trust threshold
+
+## [0.5.0] — 2026-04-15
+
+### Added
+- `ainfera deploy --demo` flag for stage-ready showcase with zero network calls
+- `--json` global flag for machine-readable output across all subcommands
+- `--api-url` global flag to point at staging or local dev environments
+- `ainfera status` consolidates API/DB/Redis/auth/CLI health into a single panel
+- `ainfera trust-check` CI gate with `comment_markdown` output for PR comments
+
+### Changed
+- Streamlined `ainfera init` interactive flow when all flags provided
+
+## [0.3.0] — 2026-04-14
+
+### Added
+- Three GitHub Actions composite workflows: `deploy-agent`, `trust-check`, `sandbox-test`
+- `actions/` directory with individual READMEs
+
+## [0.2.1] — 2026-04-13
 
 ### Fixed
-- `ainfera deploy` tests pass — previous mismatch between generated YAML (flat) and the deploy parser (expected `agent:` wrapper) is resolved.
-- Unicode escape sequences removed from f-string expressions so the package imports cleanly on Python 3.10 and 3.11.
+- Config file permissions on Linux installs
 
-## 0.3.0 (2026-04-14)
-
-### Added
-- `ainfera status` now surfaces agent counts (total / published / draft) and average trust score when authenticated — derived from `GET /v1/agents` instead of relying on `/health` stats
-- `ainfera init --non-interactive` for scripts and CI (skips prompts, uses sensible defaults; pairs well with `--force`)
-- `scripts/demo.sh` — end-to-end investor-pitch demo (status → list → create → init → deploy → trust → list) driven entirely by the CLI
-
-### Changed
-- `ainfera status` auth indicator is now verified against an authenticated endpoint, so invalid keys correctly show as unauthenticated
-- Error messages: `404` now echoes the missing id ("Agent not found: {id}"), `422` surfaces the API's validation `detail`, and JSON/`message` response bodies are handled uniformly
-
-## 0.2.1 (2026-04-13)
-
-### Fixed
-- `ainfera health` now reads `services.db` / `services.redis` from the live response shape
-- `ainfera trust score` / `history` / `anomalies` now parse the live API field names (`overall_score`, `reliability_score`, `is_public`, `anomaly_type`, …)
-- `AinferaClient.create_agent_from_config` now sends `{"config": ...}` (was `config_yaml`, which the API rejects)
-- `AinferaClient.create_agent` / `update_agent` no longer send `compute_tier` (not in the API schema); compute tier is now embedded in `config_yaml`
-- `ainfera kill` no longer sends an unaccepted `reason` body to the API
-- "Not authenticated" error now points to `ainfera auth login` (the actual command), not the missing top-level `ainfera login`
+## [0.2.0] — 2026-04-13
 
 ### Added
-- `ainfera status` — full platform overview (API/DB/Redis/CLI/auth/config) in one panel
-- Global `--api-url` flag to override the configured API URL per-command
-- Network-error messaging for connection refused / timeout / SSL failures
-- Examples in `--help` for every command (`ainfera <cmd> --help`)
-- `--framework` and `--tier` on `ainfera agents create` are now `Choice`-validated
+- `ainfera logs --follow` streaming log tail
+- `ainfera kill` emergency agent termination
 
-## 0.2.0 (2026-04-13)
+## [0.1.0] — 2026-04-13
 
 ### Added
-- `ainfera auth login` / `ainfera auth status` — authenticate with an API key and inspect the current session
-- `ainfera agents list` / `get` / `create` / `delete` — manage agents from the CLI
-- `ainfera trust score` (also `history`, `anomalies`) — view trust scores and breakdown in the terminal
-- `ainfera health` — unauthenticated health check against `api.ainfera.ai`
-- `ainfera init` — interactive scaffolding of `ainfera.yaml` (name, framework, description, compute tier)
-- `ainfera deploy` — reads `ainfera.yaml` and creates or updates the agent via the platform API (supports `--dry-run` and `--from-config`)
+- Initial release
+- `ainfera auth login`, `agents list/get/create/delete`, `trust`, `billing`
 
-### Changed
-- CLI now talks to the live API at `https://api.ainfera.ai` by default
-- Top-level `login` has moved to `auth login`; `trust` is now a command group
-
-## 0.1.0 (2026-04-20)
-
-Initial release.
-
-### Features
-- `ainfera login` — authenticate with API key
-- `ainfera init` — detect framework, generate ainfera.yaml
-- `ainfera deploy` — deploy agent with trust scoring
-- `ainfera status` — view agent status
-- `ainfera trust` — trust score breakdown
-- `ainfera kill` — kill switch control
-- `ainfera logs` — execution log streaming
-- `--json` flag on all commands
-- Rich terminal output with Ainfera brand colors
+[0.6.1]: https://github.com/ainfera-ai/cli/releases/tag/v0.6.1
+[0.6.0]: https://github.com/ainfera-ai/cli/releases/tag/v0.6.0
+[0.5.0]: https://github.com/ainfera-ai/cli/releases/tag/v0.5.0
+[0.3.0]: https://github.com/ainfera-ai/cli/releases/tag/v0.3.0
+[0.2.1]: https://github.com/ainfera-ai/cli/releases/tag/v0.2.1
+[0.2.0]: https://github.com/ainfera-ai/cli/releases/tag/v0.2.0
+[0.1.0]: https://github.com/ainfera-ai/cli/releases/tag/v0.1.0

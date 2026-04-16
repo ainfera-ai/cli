@@ -11,17 +11,16 @@ _PYTHON_FRAMEWORKS = [
     ("langgraph", "langchain"),
     ("langchain", "langchain"),
     ("crewai", "crewai"),
-    ("pyautogen", "autogen"),
-    ("autogen", "autogen"),
-    ("google-adk", "adk"),
-    ("google-genai", "adk"),
+    ("openclaw", "openclaw"),
     ("openai", "openai_sdk"),
+    # Q4 2026: ("pyautogen", "autogen"), ("google-adk", "adk"),
+    # ("llamaindex", "llamaindex"), ("semantic-kernel", "semantic-kernel"),
 ]
 
 _JS_FRAMEWORKS = [
     ("langchain", "langchain"),
-    ("@google/genai", "adk"),
     ("openai", "openai_sdk"),
+    # Q4 2026: ("@google/genai", "adk"),
 ]
 
 

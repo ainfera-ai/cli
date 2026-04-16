@@ -52,7 +52,7 @@ def auth_login(ctx, key: str | None, api_url: str | None):
             raise SystemExit(1)
         print_error(
             "Invalid API key format. Keys start with 'ainf_'.",
-            "Get your API key at https://console.ainfera.ai/settings/api-keys",
+            "Get your API key at https://app.ainfera.ai/settings/api-keys",
         )
         raise SystemExit(1)
 

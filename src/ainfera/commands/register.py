@@ -23,7 +23,7 @@ def _split(value: str | None) -> list[str]:
 @click.option(
     "--framework",
     default="openclaw",
-    help="Agent framework (openclaw, langchain, crewai, autogen, custom).",
+    help="Agent framework (langchain, crewai, openclaw, custom).",
 )
 @click.option("--capabilities", default=None, help="Comma-separated capabilities (e.g. research,summarize).")
 @click.option("--channels", default=None, help="Comma-separated channels (e.g. telegram,slack).")

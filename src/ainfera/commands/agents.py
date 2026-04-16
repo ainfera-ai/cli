@@ -128,7 +128,7 @@ def get_cmd(ctx, agent_id: str):
     "--framework",
     required=True,
     type=click.Choice(
-        ["langchain", "crewai", "autogen", "adk", "openai_sdk", "custom"],
+        ["langchain", "crewai", "openclaw", "custom"],
         case_sensitive=False,
     ),
     help="Agent framework",
