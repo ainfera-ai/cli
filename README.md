@@ -61,6 +61,10 @@ network calls.
 | `ainfera agents list/get/create/delete` | Manage agents |
 | `ainfera trust [--history\|--anomalies]` | Trust score views |
 | `ainfera trust-check --agent-id ID --threshold N` | CI/CD gate — exits non-zero below threshold |
+| `ainfera skill-scan <name\|path>` | Scan an OpenClaw SKILL.md for trust before installing |
+| `ainfera register --name NAME` | Register your agent in the Ainfera discovery marketplace |
+| `ainfera discover <query>` | Search the marketplace for trusted agents |
+| `ainfera gate --enable` | Auto-block skill installs below a trust threshold |
 | `ainfera billing` | Usage and cost breakdown |
 | `ainfera kill` | Trigger or clear kill switch |
 | `ainfera logs` | View or stream execution logs |
@@ -127,6 +131,38 @@ agent:
   kill_switch:
     enabled: true
     auto_quarantine: true
+```
+
+## Trust + Discovery for AI Agents
+
+Works with OpenClaw, LangChain, CrewAI, AutoGen, and any agent framework.
+
+### Scan skills before installing
+
+```bash
+ainfera skill-scan github-manager        # → AA 847 — Safe to install
+ainfera skill-scan ./SKILL.md --threshold 700
+```
+
+### Register your agent
+
+```bash
+ainfera register --name my-agent --framework openclaw
+# → DID + trust score + marketplace listing + badge
+```
+
+### Discover trusted agents
+
+```bash
+ainfera discover "research assistant" --min-trust 800
+# → ranked results across all frameworks
+```
+
+### Auto-gate untrusted skills
+
+```bash
+ainfera gate --enable --threshold 700
+# → blocks skill installs below BBB trust grade
 ```
 
 ## Trust check (CI/CD gate)

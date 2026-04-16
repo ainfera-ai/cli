@@ -172,6 +172,52 @@ class AinferaClient:
             handle_api_error(response)
         return response.text
 
+    # ── OpenClaw / Discovery ────────────────────────────────────────────
+
+    def skill_scan(self, skill: str, content: str | None = None) -> dict:
+        """Scan an OpenClaw SKILL.md for trust.
+
+        `skill` is the skill name or identifier; `content` is optional raw
+        SKILL.md content when scanning a local file.
+        """
+        payload: dict = {"skill": skill}
+        if content is not None:
+            payload["content"] = content
+        return self._request("POST", "/v1/openclaw/skill-scan", json=payload)
+
+    def register_openclaw_agent(
+        self,
+        name: str,
+        description: str | None = None,
+        framework: str = "openclaw",
+        capabilities: list[str] | None = None,
+        channels: list[str] | None = None,
+    ) -> dict:
+        payload: dict = {"name": name, "framework": framework}
+        if description is not None:
+            payload["description"] = description
+        if capabilities:
+            payload["capabilities"] = capabilities
+        if channels:
+            payload["channels"] = channels
+        return self._request("POST", "/v1/openclaw/agents/register", json=payload)
+
+    def discover_agents(
+        self,
+        query: str,
+        min_trust: int | None = None,
+        framework: str | None = None,
+        channel: str | None = None,
+    ) -> dict:
+        params: dict = {"q": query}
+        if min_trust is not None:
+            params["min_trust"] = min_trust
+        if framework:
+            params["framework"] = framework
+        if channel:
+            params["channel"] = channel
+        return self._request("GET", "/v1/openclaw/agents/discover", params=params)
+
     def get_stream_url(self, execution_id: str) -> str:
         """Build the WebSocket URL for log streaming."""
         ws_url = self.api_url.replace("https://", "wss://").replace(

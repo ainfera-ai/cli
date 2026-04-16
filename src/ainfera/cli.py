@@ -9,11 +9,15 @@ from ainfera.commands.agents import agents
 from ainfera.commands.auth import auth
 from ainfera.commands.billing import billing
 from ainfera.commands.deploy import deploy
+from ainfera.commands.discover import discover
+from ainfera.commands.gate import gate
 from ainfera.commands.health import health
 from ainfera.commands.init import init
 from ainfera.commands.kill import kill
 from ainfera.commands.login import login
 from ainfera.commands.logs import logs
+from ainfera.commands.register import register
+from ainfera.commands.skill_scan import skill_scan
 from ainfera.commands.status import status
 from ainfera.commands.trust import trust
 from ainfera.commands.trust_check import trust_check
@@ -57,6 +61,10 @@ main.add_command(kill)
 main.add_command(logs)
 main.add_command(billing)
 main.add_command(login)
+main.add_command(skill_scan)
+main.add_command(register)
+main.add_command(discover)
+main.add_command(gate)
 
 
 if __name__ == "__main__":
