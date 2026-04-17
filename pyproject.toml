@@ -5,7 +5,7 @@ description = "CLI for the Ainfera AI agent infrastructure platform"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
-authors = [{name = "Ainfera Technologies", email = "labs@ainfera.ai"}]
+authors = [{name = "Hizrian Raz", email = "hizrian@ainfera.ai"}]
 keywords = ["ai", "agents", "trust", "infrastructure", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",

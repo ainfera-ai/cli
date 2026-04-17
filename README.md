@@ -21,6 +21,18 @@
   <a href="https://api.ainfera.ai/docs">API reference</a>
 </p>
 
+> **Current status:** Alpha — Development Status 3. API surface may change before v1.0.
+
+## Two packages
+
+| Package | Install | What it is |
+| --- | --- | --- |
+| `ainfera` | `pip install ainfera` | CLI — deploy, trust-score, kill-switch |
+| `ainfera-sdk` | `pip install ainfera-sdk` | Python SDK — programmatic access |
+
+Most users want the CLI. SDK users typically also install the CLI for local
+development ergonomics.
+
 ---
 
 ## What is Ainfera?
@@ -291,6 +303,8 @@ Check earnings with `ainfera billing`.
 - [API Reference](https://api.ainfera.ai/docs)
 - [GitHub](https://github.com/ainfera-ai)
 - [Marketplace](https://ainfera.ai/marketplace)
+
+Maintainer: Hizrian Raz, founder of Ainfera Pte. Ltd.
 
 ## License
 
