@@ -112,7 +112,10 @@ def deploy(
     memory = compute.get("memory", "512mb")
     cpu = compute.get("cpu", 1)
     trust_cfg = agent_section.get("trust") or {}
-    floor = trust_cfg.get("quarantine_threshold", trust_cfg.get("floor", 400))
+    floor = trust_cfg.get(
+        "auto_kill_below",
+        trust_cfg.get("quarantine_threshold", trust_cfg.get("floor", 400)),
+    )
     billing = agent_section.get("billing") or {}
     billing_model = billing.get("model", "per_call")
     billing_rate = billing.get("price_per_call", billing.get("rate_usd", 0.003))

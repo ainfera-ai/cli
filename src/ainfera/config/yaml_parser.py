@@ -5,17 +5,23 @@ from __future__ import annotations
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ComputeConfig(BaseModel):
-    sandbox: Literal["docker", "firecracker"] = "docker"
-    memory: str = "512mb"
-    cpu: int = 1
-    timeout: str = "300s"
+    tier: Literal["basic", "standard", "gpu"] = "standard"
+    timeout: int = 30
+    # Legacy (pre-canonical) fields — still accepted for backward compat
+    sandbox: Literal["docker", "firecracker"] | None = None
+    memory: str | None = None
+    cpu: int | None = None
 
 
 class TrustConfig(BaseModel):
+    # Canonical thresholds. Grade boundaries: AAA>=900, AA>=800, A>=700,
+    # BBB>=600, BB>=500, B>=400, CCC<400 -> auto-quarantine.
+    min_score: int = 700
+    auto_kill_below: int = 400
     dimensions: dict[str, bool] = Field(
         default_factory=lambda: {
             "reliability": True,
@@ -23,8 +29,17 @@ class TrustConfig(BaseModel):
             "quality": True,
         }
     )
-    anomaly_detection: bool = True
-    quarantine_threshold: int = 400
+    # Legacy keys accepted during alpha — map to canonical on load
+    anomaly_detection: bool | None = None
+    quarantine_threshold: int | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_keys(cls, data):
+        if isinstance(data, dict):
+            if "auto_kill_below" not in data and "quarantine_threshold" in data:
+                data["auto_kill_below"] = data["quarantine_threshold"]
+        return data
 
 
 class BillingConfig(BaseModel):

@@ -59,7 +59,10 @@ def test_generate_yaml_produces_valid_output():
     parsed = parse_yaml(yaml_str)
     assert parsed.name == "test-agent"
     assert parsed.framework == "langchain"
-    assert parsed.compute.memory == "512mb"
+    assert parsed.compute.tier == "standard"
+    assert parsed.compute.timeout == 30
+    assert parsed.trust.min_score == 700
+    assert parsed.trust.auto_kill_below == 400
 
 
 def test_init_creates_yaml(tmp_path, runner):
