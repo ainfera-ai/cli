@@ -162,22 +162,26 @@ Run `ainfera init` (interactive) or `ainfera init --non-interactive --name my-ag
 version: "1"
 agent:
   name: research-agent
-  framework: langchain
+  framework: langchain           # langchain | crewai | openclaw | custom
+  description: "Pulls research papers and synthesizes summaries."
   compute:
-    sandbox: docker        # docker | firecracker
-    memory: 512mb
-    cpu: 1
-    timeout: 300s
+    tier: standard               # basic | standard | gpu
+    timeout: 30                  # seconds
   trust:
-    anomaly_detection: true
-    quarantine_threshold: 400
+    min_score: 700               # must stay ≥ this to remain listed/invokable
+    auto_kill_below: 400         # recomputation below this auto-quarantines
   billing:
-    model: per_call        # per_call | per_token | per_minute
+    model: per_call              # per_call | per_token | per_minute
     price_per_call: 0.003
   kill_switch:
     enabled: true
     auto_quarantine: true
 ```
+
+Trust grade boundaries (canonical across site, CLI, SDK, API):
+
+- **AAA** ≥ 900 · **AA** ≥ 800 · **A** ≥ 700 · **BBB** ≥ 600 · **BB** ≥ 500 · **B** ≥ 400
+- **CCC** < 400 → auto-quarantine
 
 ## Trust + Discovery for AI Agents
 
