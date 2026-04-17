@@ -134,6 +134,35 @@ Surface in `ainfera billing` output and in README Revenue split section.
 - `https://api.ainfera.ai` — API endpoint (default `AINFERA_API_URL`)
 - `https://console.ainfera.ai` — legacy, 308-redirected to apex
 
+## Canonical values (do not drift)
+
+- PyPI package: `ainfera` (pip install ainfera). SDK is a separate package: `ainfera-sdk`.
+- PyPI version: **0.6.1** (do not bump without explicit release plan).
+- License: Apache 2.0.
+- Maintainer: Hizrian Raz `<hizrian@ainfera.ai>` — all commits authored under this identity.
+- API default: `https://api.ainfera.ai`.
+- Config path: `~/.ainfera/config.yaml`.
+- Env prefix: `AINFERA_*`.
+
+## Trust grade boundaries (canonical across site, CLI, SDK, API)
+
+- AAA ≥ 900 · AA ≥ 800 · A ≥ 700 · BBB ≥ 600 · BB ≥ 500 · B ≥ 400
+- CCC < 400 → auto-quarantine
+
+## ainfera.yaml canonical schema
+
+Use ONE form across README, `ainfera init` scaffold, and yaml_parser validation:
+`agent.trust` uses `min_score` + `auto_kill_below`. `agent.compute` uses
+`tier` + `timeout` (seconds). Legacy keys (`anomaly_detection`,
+`quarantine_threshold`, `sandbox`, `memory`, `cpu`) are still accepted by
+the parser during Alpha.
+
+## Contributor policy
+
+Solo-maintained by Hizrian. Do not introduce commits authored under bot
+identities (no `claude` account, no CI-bot committers). Local
+`git config user.email` must match `hizrian@ainfera.ai`.
+
 ## NVIDIA Inception compliance
 
 Forbidden vocabulary in the CLI's `--help` text, README, changelog, error

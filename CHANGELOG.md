@@ -5,6 +5,23 @@ All notable changes to the `ainfera` CLI are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Breaking (schema):** `ainfera.yaml` canonical `agent.trust` block replaces
+  `anomaly_detection` / `quarantine_threshold` with `min_score` and
+  `auto_kill_below`. Legacy keys are still accepted during Alpha — loaders
+  migrate `quarantine_threshold` → `auto_kill_below` transparently.
+- `ainfera.yaml` canonical `agent.compute` block uses `tier`
+  (`basic` | `standard` | `gpu`) and integer `timeout` (seconds). Legacy
+  `sandbox` / `memory` / `cpu` fields still parse.
+- README documents canonical trust grade boundaries
+  (AAA≥900 · AA≥800 · A≥700 · BBB≥600 · BB≥500 · B≥400 · CCC<400).
+
+### Added
+- `pyproject.toml` per-framework optional extras (`langchain`, `crewai`,
+  `openclaw`, `anthropic`, `openai`, `huggingface`, `nvidia`, `all`).
+
 ## [0.6.1] — 2026-04-17
 
 ### Changed
