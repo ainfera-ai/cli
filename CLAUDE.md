@@ -123,7 +123,7 @@ When adding a new framework, update three places in one PR:
 
 ## Revenue split (locked April 17, 2026)
 
-**85% creator · 5% platform · 10% compute.** Retired: 60/25/15.
+**85% creator · 5% platform · 10% compute.** Supersedes the pre-April split.
 
 Surface in `ainfera billing` output and in README Revenue split section.
 
