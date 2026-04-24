@@ -203,7 +203,7 @@ def deploy(
                 action = "created"
 
         agent_id = agent.get("id", "")
-        did = agent.get("did") or f"did:ainfera:agent:{agent_id[:4]}" if agent_id else "(unknown)"
+        did = agent.get("did") or f"did:web:ainfera.ai:agents:{agent_id[:4]}" if agent_id else "(unknown)"
         if agent_id:
             set_default_agent(agent_id)
 
@@ -507,7 +507,7 @@ def _run_demo(*, json_output: bool) -> None:
             "\n"
             "  Agent:     [bold]my-agent[/]\n"
             "  Framework: [ainfera.muted]LangChain (auto-detected)[/]\n"
-            "  DID:       [ainfera.muted]did:ainfera:agent:a7f3[/]\n",
+            "  DID:       [ainfera.muted]did:web:ainfera.ai:agents:a7f3[/]\n",
             title="[bold]Ainfera Deploy[/]",
             border_style="ainfera.brand",
             padding=(0, 2),
