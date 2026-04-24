@@ -260,18 +260,24 @@ Each action has its own README in `actions/<name>/README.md`.
 
 ## Python SDK
 
-The `ainfera` package also exposes a typed, synchronous SDK for
-programmatic use — handy in agent servers, notebooks, or custom
-automation:
+For programmatic use — agent servers, notebooks, custom automation —
+install the SDK as a separate package:
+
+```bash
+pip install ainfera-sdk
+```
 
 ```python
-from ainfera.sdk import AinferaSDK
+from ainfera_sdk import Ainfera
 
-with AinferaSDK(api_key="ainf_...") as sdk:
-    agent = sdk.create_agent(name="my-agent", framework="langchain")
-    trust = sdk.get_trust_score(agent["id"])
+with Ainfera(api_key="ainf_...") as client:
+    agent = client.create_agent(name="my-agent", framework="langchain")
+    trust = client.get_trust_score(agent["id"])
     print(trust["score"], trust["grade"])
 ```
+
+The SDK (`ainfera-sdk`) and the CLI (`ainfera`) are separate packages on
+PyPI. Install either independently; most users install both.
 
 ## Seed-stage integration scope
 
