@@ -1,0 +1,96 @@
+name: Ainfera Trust Check
+description: Evaluate an agent's trust score as a PR check. Posts a dimension breakdown and fails below threshold.
+author: Ainfera
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  api-key:
+    description: Ainfera API key (starts with ainf_).
+    required: true
+  agent-id:
+    description: Agent ID to check.
+    required: true
+  threshold:
+    description: Fail the job if the post-commit score falls below this value (0-1000).
+    required: false
+    default: "0"
+  api-url:
+    description: Override the Ainfera API URL.
+    required: false
+    default: https://api.ainfera.ai
+  python-version:
+    description: Python version to set up.
+    required: false
+    default: "3.11"
+  comment-on-pr:
+    description: Post the trust diff as a PR comment.
+    required: false
+    default: "true"
+
+outputs:
+  score:
+    description: The agent's post-commit trust score.
+    value: ${{ steps.check.outputs.score }}
+  grade:
+    description: The trust grade (e.g. AAA, AA, A, B, C).
+    value: ${{ steps.check.outputs.grade }}
+  delta:
+    description: Score change relative to the pre-commit baseline.
+    value: ${{ steps.check.outputs.delta }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Ainfera CLI
+      shell: bash
+      run: pip install --upgrade ainfera
+
+    - name: Run trust check
+      id: check
+      shell: bash
+      env:
+        AINFERA_API_KEY: ${{ inputs.api-key }}
+        AINFERA_API_URL: ${{ inputs.api-url }}
+        AINFERA_AGENT_ID: ${{ inputs.agent-id }}
+        AINFERA_THRESHOLD: ${{ inputs.threshold }}
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        python "${{ github.action_path }}/trust_check.py" > trust-check.json
+        cat trust-check.json
+        score="$(python -c 'import json;d=json.load(open("trust-check.json"));print(d.get("after",{}).get("score",0))')"
+        grade="$(python -c 'import json;d=json.load(open("trust-check.json"));print(d.get("after",{}).get("grade",""))')"
+        delta="$(python -c 'import json;d=json.load(open("trust-check.json"));print(d.get("delta",0))')"
+        failed="$(python -c 'import json;d=json.load(open("trust-check.json"));print("1" if d.get("failed") else "0")')"
+        echo "score=$score" >> "$GITHUB_OUTPUT"
+        echo "grade=$grade" >> "$GITHUB_OUTPUT"
+        echo "delta=$delta" >> "$GITHUB_OUTPUT"
+        echo "failed=$failed" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR
+      if: ${{ inputs.comment-on-pr == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('trust-check.json', 'utf8'));
+          const body = data.comment || `### Ainfera Trust Check\n\nScore: ${data.after?.score} (${data.after?.grade})`;
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body,
+          });
+
+    - name: Fail on threshold breach
+      if: ${{ steps.check.outputs.failed == '1' }}
+      shell: bash
+      run: |
+        echo "::error::Trust score ${{ steps.check.outputs.score }} is below threshold ${{ inputs.threshold }}"
+        exit 1

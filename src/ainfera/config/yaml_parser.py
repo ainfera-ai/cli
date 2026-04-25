@@ -1,0 +1,120 @@
+"""ainfera.yaml schema, parser, and generator."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, Field, model_validator
+
+
+class ComputeConfig(BaseModel):
+    tier: Literal["basic", "standard", "gpu"] = "standard"
+    timeout: int = 30
+    # Legacy (pre-canonical) fields — still accepted for backward compat
+    sandbox: str | None = None
+    memory: str | None = None
+    cpu: int | None = None
+
+
+class TrustConfig(BaseModel):
+    # Canonical thresholds. Grade boundaries: AAA>=900, AA>=800, A>=700,
+    # BBB>=600, BB>=500, B>=400, CCC<400 -> auto-quarantine.
+    min_score: int = 700
+    auto_kill_below: int = 400
+    dimensions: dict[str, bool] = Field(
+        default_factory=lambda: {
+            "reliability": True,
+            "security": True,
+            "quality": True,
+        }
+    )
+    # Legacy keys accepted for backward compat — mapped to canonical on load
+    anomaly_detection: bool | None = None
+    quarantine_threshold: int | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_keys(cls, data):
+        if isinstance(data, dict):
+            if "auto_kill_below" not in data and "quarantine_threshold" in data:
+                data["auto_kill_below"] = data["quarantine_threshold"]
+        return data
+
+
+class BillingConfig(BaseModel):
+    enabled: bool = True
+    model: Literal["per_call", "per_token", "per_minute"] = "per_call"
+    price_per_call: float = 0.003
+    currency: str = "usd"
+    creator_share: float = 0.80
+
+
+class InferenceConfig(BaseModel):
+    provider: str | None = None
+    model: str | None = None
+    fallback: str | None = None
+
+
+class KillSwitchConfig(BaseModel):
+    enabled: bool = True
+    auto_quarantine: bool = True
+    budget_limit: float | None = None
+
+
+class AinferaConfig(BaseModel):
+    name: str
+    framework: str
+    version: str = "0.1.0"
+    compute: ComputeConfig = ComputeConfig()
+    trust: TrustConfig = TrustConfig()
+    billing: BillingConfig = BillingConfig()
+    inference: InferenceConfig = InferenceConfig()
+    kill_switch: KillSwitchConfig = KillSwitchConfig()
+
+
+# Section comments injected into generated YAML
+_SECTION_COMMENTS = {
+    "compute": "# Sandbox and compute tier",
+    "trust": "# Trust scoring thresholds",
+    "billing": "# Billing model (per_call, per_token, per_minute)",
+    "inference": "# LLM provider routing",
+    "kill_switch": "# Kill switch auto-quarantines misbehaving agents",
+}
+
+
+def generate_yaml(config: AinferaConfig) -> str:
+    """Render config to YAML string wrapped in an ``agent:`` section."""
+    data = config.model_dump(exclude_none=True)
+    wrapped = {"version": "1", "agent": data}
+    raw = yaml.safe_dump(wrapped, default_flow_style=False, sort_keys=False)
+
+    lines = raw.splitlines()
+    result: list[str] = []
+    for line in lines:
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        key = stripped.split(":")[0] if ":" in stripped else ""
+        if key in _SECTION_COMMENTS and indent == 2:
+            result.append("")
+            result.append(" " * indent + _SECTION_COMMENTS[key])
+        result.append(line)
+
+    return "\n".join(result).strip() + "\n"
+
+
+def parse_yaml(yaml_string: str) -> AinferaConfig:
+    """Parse ainfera.yaml string into a config object.
+
+    Accepts both the wrapped ``agent:`` form and legacy flat form.
+    """
+    data = yaml.safe_load(yaml_string) or {}
+    if isinstance(data, dict) and "agent" in data and isinstance(data["agent"], dict):
+        data = data["agent"]
+    return AinferaConfig(**data)
+
+
+def load_yaml_file(path: str = "ainfera.yaml") -> AinferaConfig:
+    """Load and parse ainfera.yaml from a file path."""
+    with open(path) as f:
+        return parse_yaml(f.read())

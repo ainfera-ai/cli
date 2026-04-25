@@ -1,0 +1,1 @@
+Run the full deploy showcase locally without hitting the real API. Simulates the deploy output with Rich formatting, timing delays, and trust score visualization. Uses mock data: agent "my-agent", auto-detected framework, DID `did:web:ainfera.ai:agents:a7f3`, trust AAA 942, cost $0.003/invocation, floor 400. Run: `python -m ainfera deploy --demo`.

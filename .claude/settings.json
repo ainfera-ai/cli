@@ -1,0 +1,1 @@
+{"permissions":{"allow":["Bash(python*)","Bash(pip*)","Bash(pytest*)","Bash(ruff*)","Bash(black*)","Bash(mypy*)","Bash(cat*)","Bash(ls*)","Bash(find*)","Bash(grep*)","Bash(head*)","Bash(tail*)","Bash(wc*)","Bash(mkdir*)","Bash(cp*)","Bash(mv*)","Bash(touch*)"],"deny":["Bash(rm -rf /)","Bash(twine*)","Bash(curl*)","Bash(wget*)"]}}

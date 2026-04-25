@@ -1,0 +1,66 @@
+name: Ainfera Deploy Agent
+description: Deploy an agent to Ainfera using ainfera.yaml. Runs a server-side trust evaluation and publishes to the discovery marketplace.
+author: Ainfera
+branding:
+  icon: upload-cloud
+  color: blue
+
+inputs:
+  api-key:
+    description: Ainfera API key (starts with ainf_). Store as a repository secret.
+    required: true
+  config:
+    description: Path to ainfera.yaml.
+    required: false
+    default: ainfera.yaml
+  api-url:
+    description: Override the Ainfera API URL.
+    required: false
+    default: https://api.ainfera.ai
+  python-version:
+    description: Python version to set up.
+    required: false
+    default: "3.11"
+  cli-version:
+    description: Pin a specific ainfera CLI version. Defaults to latest.
+    required: false
+    default: ""
+
+outputs:
+  agent-id:
+    description: The ID of the deployed agent.
+    value: ${{ steps.deploy.outputs.agent_id }}
+  trust-score:
+    description: The agent's current trust score.
+    value: ${{ steps.deploy.outputs.trust_score }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Ainfera CLI
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.cli-version }}" ]; then
+          pip install "ainfera==${{ inputs.cli-version }}"
+        else
+          pip install --upgrade ainfera
+        fi
+
+    - name: Deploy agent
+      id: deploy
+      shell: bash
+      env:
+        AINFERA_API_KEY: ${{ inputs.api-key }}
+        AINFERA_API_URL: ${{ inputs.api-url }}
+      run: |
+        result="$(ainfera --json deploy --config '${{ inputs.config }}')"
+        echo "$result"
+        agent_id="$(printf '%s' "$result" | python -c 'import json,sys;d=json.load(sys.stdin);print(d.get("agent_id",""))')"
+        trust_score="$(printf '%s' "$result" | python -c 'import json,sys;d=json.load(sys.stdin);print(d.get("trust_score") or "")')"
+        echo "agent_id=$agent_id" >> "$GITHUB_OUTPUT"
+        echo "trust_score=$trust_score" >> "$GITHUB_OUTPUT"
